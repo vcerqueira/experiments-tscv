@@ -3,7 +3,7 @@ import warnings
 import pandas as pd
 from neuralforecast import NeuralForecast
 
-from utils.load_data.config import DATASETS, DATA_GROUPS
+from src.load_data.config import DATASETS, DATA_GROUPS
 from utils.models_config import ModelsConfig
 
 warnings.filterwarnings('ignore')
