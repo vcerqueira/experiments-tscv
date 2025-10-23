@@ -1,0 +1,6 @@
+datasetsforecast==0.0.8
+gluonts==0.15.1
+numpy==1.26.4
+pandas==2.2.3
+neuralforecast==3.0.0
+python-dotenv==1.1.0
