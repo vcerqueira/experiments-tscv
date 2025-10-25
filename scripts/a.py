@@ -1,12 +1,11 @@
 import os
 import warnings
 
-import pandas as pd
 from neuralforecast import NeuralForecast
 
 from src.load_data.config import DATASETS, DATA_GROUPS
 from src.neural.methods import ModelsConfig
-from src.config import N_SAMPLES
+from src.config import N_SAMPLES, RETRAIN_FOR_TEST
 
 warnings.filterwarnings('ignore')
 
@@ -14,7 +13,6 @@ os.environ['TUNE_DISABLE_STRICT_METRIC_CHECKING'] = '1'
 
 # ---- data loading and partitioning
 GROUP_IDX = 0
-EXPERIMENT = 'nf'
 data_name, group = DATA_GROUPS[GROUP_IDX]
 print(data_name, group)
 data_loader = DATASETS[data_name]
@@ -39,21 +37,20 @@ cv = nf.cross_validation(df=estimation_train,
 
 print(cv)
 
-# how to retrain the best configuration only?
-# nf.models[0].results.get_best_result().config
+if RETRAIN_FOR_TEST:
+    optim_models = []
+    for mod in nf.models:
+        print(mod.alias)
+        opm_mod = ModelsConfig.MODEL_CLASSES[mod.alias](**mod.results.get_best_result().config)
 
-nf.fit(df=estimation_train, use_init_models=False)
-#
+        optim_models.append(opm_mod)
 
-fcst = nf.predict(df=estimation_train)
-#
-#
-# # ---- model fitting
-# nf.fit(df=train)
-# nf.predict()
-# #
-#
-#
-#
+    nf_opt = NeuralForecast(models=optim_models, freq=freq_str)
+    nf_opt.fit(df=estimation_train, val_size=12)
+    fcst = nf_opt.predict(df=estimation_train)
+else:
+    fcst = nf.predict(df=estimation_train)
+
+print(fcst)
 #
 # best_conf_df.to_csv(f'assets/results/{data_name},{group},{EXPERIMENT}.csv', index=True)
