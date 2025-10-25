@@ -1,6 +1,7 @@
 from typing import Optional
 
 from ray import tune
+from neuralforecast.losses.pytorch import MAE
 from neuralforecast.auto import (AutoGRU,
                                  AutoKAN,
                                  AutoMLP,
@@ -67,6 +68,8 @@ class ModelsConfig:
                 h=horizon,
                 num_samples=n_samples,
                 alias=mod_name,
+                valid_loss=MAE(),
+                refit_with_val=True
             )
 
             models.append(model_instance)
