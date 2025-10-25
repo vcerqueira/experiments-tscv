@@ -31,16 +31,16 @@ class ModelsConfig:
         model_cls = {
             'AutoKAN': AutoKAN,
             'AutoMLP': AutoMLP,
-            'AutoDLinear': AutoDLinear,
-            'AutoNHITS': AutoNHITS,
+            # 'AutoDLinear': AutoDLinear,
+            # 'AutoNHITS': AutoNHITS,
             'AutoDeepNPTS': AutoDeepNPTS,
-            'AutoTFT': AutoTFT,
-            'AutoPatchTST': AutoPatchTST,
-            'AutoGRU': AutoGRU,
-            'AutoDeepAR': AutoDeepAR,
-            'AutoLSTM': AutoLSTM,
-            'AutoDilatedRNN': AutoDilatedRNN,
-            'AutoTCN': AutoTCN,
+            # 'AutoTFT': AutoTFT,
+            # 'AutoPatchTST': AutoPatchTST,
+            # 'AutoGRU': AutoGRU,
+            # 'AutoDeepAR': AutoDeepAR,
+            # 'AutoLSTM': AutoLSTM,
+            # 'AutoDilatedRNN': AutoDilatedRNN,
+            # 'AutoTCN': AutoTCN,
         }
 
         models = []

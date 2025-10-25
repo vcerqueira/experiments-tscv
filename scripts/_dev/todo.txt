@@ -1,0 +1,33 @@
+# todo implement cv approaches
+- [ ] time-wise holdout
+- [ ] series-wise holdout
+- [ ] series-wise k-fold cv
+- [ ] series-wise repeated k-fold cv
+- [ ] series-wise bootstrapping
+- [ ] series-wise repeated bootstrapping
+- [ ] series-wise monte carlo cv
+
+# todo learning methods
+- [ ] auto models: configuration selected using the validation set
+- [ ] pre-defined pool of models: easier to run
+
+# todo variants
+- [ ] standard rolling origin
+- [ ] embargo
+- [ ] aggregation per fold v per series
+
+
+# todo analysis variants
+- [ ] selection v estimation
+- [ ] sensitivity to sample size
+
+
+# todo analysis
+- [ ] per dataset: dataset sample size issue
+- [ ] per time series: disregarding potential dependencies?? but solves the modelling issue as we could use automodels
+
+
+## Notes
+- focused on neural networks trained for cross-learning
+- check if we are using the validation set
+
