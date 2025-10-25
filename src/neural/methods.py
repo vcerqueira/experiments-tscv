@@ -1,3 +1,6 @@
+from typing import Optional
+
+from ray import tune
 from neuralforecast.auto import (AutoGRU,
                                  AutoKAN,
                                  AutoMLP,
@@ -12,13 +15,16 @@ from neuralforecast.auto import (AutoGRU,
                                  AutoDilatedRNN)
 
 
+
+
 class ModelsConfig:
 
     @classmethod
     def get_auto_nf_models(cls,
                            horizon: int,
                            n_samples: int,
-                           limit_val_batches: bool = False):
+                           limit_epochs: bool = False,
+                           limit_val_batches: Optional[int] = None):
 
         NEED_CPU = ['AutoGRU',
                     'AutoDeepNPTS',
@@ -29,11 +35,11 @@ class ModelsConfig:
                     'AutoTCN']
 
         model_cls = {
-            'AutoKAN': AutoKAN,
+            # 'AutoKAN': AutoKAN,
             'AutoMLP': AutoMLP,
             # 'AutoDLinear': AutoDLinear,
             # 'AutoNHITS': AutoNHITS,
-            'AutoDeepNPTS': AutoDeepNPTS,
+            # 'AutoDeepNPTS': AutoDeepNPTS,
             # 'AutoTFT': AutoTFT,
             # 'AutoPatchTST': AutoPatchTST,
             # 'AutoGRU': AutoGRU,
@@ -50,9 +56,12 @@ class ModelsConfig:
             else:
                 mod.default_config['accelerator'] = 'mps'
 
-            if limit_val_batches:
-                # for M4
-                mod.default_config['limit_val_batches'] = 50
+            if limit_epochs:
+                # mod.default_config['max_steps'] = tune.choice([3, 2])
+                mod.default_config['max_steps'] = 20
+
+            if limit_val_batches is not None:
+                mod.default_config['limit_val_batches'] = limit_val_batches
 
             model_instance = mod(
                 h=horizon,

@@ -15,11 +15,13 @@
 - [ ] standard rolling origin
 - [ ] embargo
 - [ ] aggregation per fold v per series
+- [ ] one shot test v n_windows-based
 
 
 # todo analysis variants
 - [ ] selection v estimation
 - [ ] sensitivity to sample size
+- [ ] are we estimating the workflow (incl. HPO) or the final model (retrained OR not)?
 
 
 # todo analysis
