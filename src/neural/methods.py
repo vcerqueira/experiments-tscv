@@ -1,6 +1,5 @@
 from typing import Optional
 
-from ray import tune
 from neuralforecast.losses.pytorch import MAE
 from neuralforecast.auto import (AutoGRU,
                                  AutoKAN,
@@ -14,8 +13,6 @@ from neuralforecast.auto import (AutoGRU,
                                  AutoDeepAR,
                                  AutoTCN,
                                  AutoDilatedRNN)
-
-
 
 
 class ModelsConfig:
@@ -36,7 +33,7 @@ class ModelsConfig:
                     'AutoTCN']
 
         model_cls = {
-            # 'AutoKAN': AutoKAN,
+            'AutoKAN': AutoKAN,
             'AutoMLP': AutoMLP,
             # 'AutoDLinear': AutoDLinear,
             # 'AutoNHITS': AutoNHITS,
@@ -58,7 +55,6 @@ class ModelsConfig:
                 mod.default_config['accelerator'] = 'mps'
 
             if limit_epochs:
-                # mod.default_config['max_steps'] = tune.choice([3, 2])
                 mod.default_config['max_steps'] = 20
 
             if limit_val_batches is not None:
@@ -69,7 +65,7 @@ class ModelsConfig:
                 num_samples=n_samples,
                 alias=mod_name,
                 valid_loss=MAE(),
-                refit_with_val=True
+                refit_with_val=True,
             )
 
             models.append(model_instance)

@@ -10,7 +10,6 @@ from src.config import N_SAMPLES
 
 warnings.filterwarnings('ignore')
 
-
 os.environ['TUNE_DISABLE_STRICT_METRIC_CHECKING'] = '1'
 
 # ---- data loading and partitioning
@@ -28,29 +27,31 @@ df, horizon, n_lags, freq_str, freq_int = data_loader.load_everything(group, sam
 estimation_train, estimation_test = data_loader.train_test_split(df, horizon=horizon)
 
 models = ModelsConfig.get_auto_nf_models(horizon=horizon,
-                                         n_samples=N_SAMPLES,
-                                         limit_epochs=False,
-                                         limit_val_batches=False)
+                                         n_samples=N_SAMPLES)
 
 # ---- model setup
 nf = NeuralForecast(models=models, freq=freq_str)
 
 cv = nf.cross_validation(df=estimation_train,
-                         val_size=24,
+                         val_size=12,
                          test_size=12,
                          n_windows=None)
 
+print(cv)
+
+# how to retrain the best configuration only?
+# nf.models[0].results.get_best_result().config
 
 nf.fit(df=estimation_train, use_init_models=False)
-
-# Now predict
-forecasts = nf.predict()
-
-
-# ---- model fitting
-nf.fit(df=train)
-nf.predict()
 #
+
+fcst = nf.predict(df=estimation_train)
+#
+#
+# # ---- model fitting
+# nf.fit(df=train)
+# nf.predict()
+# #
 #
 #
 #
