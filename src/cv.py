@@ -11,12 +11,11 @@ def time_wise_holdout(train, test, models, freq, horizon):
     cv_params = {'val_size': horizon, 'test_size': horizon, 'n_windows': None, }
     cv_inner = nf.cross_validation(df=train, **cv_params)
 
-    # -- get best config; easy with time-wise holdout. how to with series-wise?
-    optim_models = ModelsConfig.get_best_configs(nf)
-
     # -- "inference"
     fcst = nf.predict(df=train)
 
+    # -- get best config; easy with time-wise holdout. how to with series-wise?
+    optim_models = ModelsConfig.get_best_configs(nf)
     nf_rt = NeuralForecast(models=optim_models, freq=freq)
     nf_rt.fit(df=train, val_size=horizon)
     fcst_rt = nf_rt.predict(df=train)
