@@ -98,7 +98,7 @@ class LoadDataset:
         return diff_df
 
     @staticmethod
-    def train_test_split(df: pd.DataFrame, horizon: int):
+    def time_wise_split(df: pd.DataFrame, horizon: int):
         df_by_unq = df.groupby('unique_id')
 
         train_l, test_l = [], []

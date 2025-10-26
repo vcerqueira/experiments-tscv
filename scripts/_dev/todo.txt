@@ -1,6 +1,7 @@
 # todo implement cv approaches
 - [ ] time-wise holdout
 - [ ] series-wise holdout
+- [ ] series-wise repeated holdout
 - [ ] series-wise k-fold cv
 - [ ] series-wise repeated k-fold cv
 - [ ] series-wise bootstrapping

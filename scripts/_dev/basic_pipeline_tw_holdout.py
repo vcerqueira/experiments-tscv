@@ -4,7 +4,7 @@ import warnings
 from neuralforecast import NeuralForecast
 
 from src.load_data.config import DATASETS, DATA_GROUPS
-from src.neuralnets import ModelsConfig
+from src.neural.methods import ModelsConfig
 from src.config import N_SAMPLES, RETRAIN_FOR_TEST
 
 warnings.filterwarnings('ignore')
@@ -18,39 +18,32 @@ data_name, group = DATA_GROUPS[GROUP_IDX]
 print(data_name, group)
 data_loader = DATASETS[data_name]
 
-n_uids, n_trials = (30, 3) if DRY_RUN else (None, N_SAMPLES)
+n_uids, n_trials, retrain = (30, 2, False) if DRY_RUN else (None, N_SAMPLES, RETRAIN_FOR_TEST)
 
 df, horizon, n_lags, freq_str, freq_int = data_loader.load_everything(group, sample_n_uid=n_uids)
 # df, horizon, n_lags, freq_str, freq_int = data_loader.load_everything(group)
 # df = data_loader.get_uid_tails(df, tail_size=100)
 # df = data_loader.dummify_series(df)
 
-# train test split
 estimation_train, estimation_test = data_loader.time_wise_split(df, horizon=horizon)
 
 models = ModelsConfig.get_auto_nf_models(horizon=horizon, n_samples=n_trials)
 
+# ---- model setup
+nf = NeuralForecast(models=models, freq=freq_str)
 
-def time_wise_holdout(train, test, models, freq, horizon):
-    # -- setup
-    nf = NeuralForecast(models=models, freq=freq_str)
+cv = nf.cross_validation(df=estimation_train, val_size=horizon, test_size=horizon, n_windows=None)
 
-    # -- cv
-    inner_cv = nf.cross_validation(df=estimation_train,
-                                   val_size=horizon,
-                                   test_size=horizon,
-                                   n_windows=None)
+fcst = nf.predict(df=estimation_train)
 
-    # -- get best config; easy with time-wise holdout. how to with series-wise?
+if retrain:
     optim_models = ModelsConfig.get_best_configs(nf)
-
-    # -- "inference"
-    fcst = nf.predict(df=estimation_train)
 
     nf_rt = NeuralForecast(models=optim_models, freq=freq_str)
     nf_rt.fit(df=estimation_train, val_size=horizon)
     fcst_rt = nf_rt.predict(df=estimation_train)
 
+print(fcst)
 
 cv = fcst.merge(estimation_test, on=['ds', 'unique_id'], how='right')
 
