@@ -1,6 +1,8 @@
 import os
 import warnings
 
+import numpy as np
+import pandas as pd
 from neuralforecast import NeuralForecast
 
 from src.load_data.config import DATASETS, DATA_GROUPS
@@ -32,17 +34,35 @@ models = ModelsConfig.get_auto_nf_models(horizon=horizon, n_samples=n_trials)
 # ---- model setup
 nf = NeuralForecast(models=models, freq=freq_str)
 
-import numpy as np
+uids = estimation_train['unique_id'].unique()
+n_train = int(len(uids) * 0.7)
+train_ids = np.random.choice(uids, size=n_train, replace=False)
 
-# Get unique IDs and randomly split into train/test
-unique_ids = estimation_train['unique_id'].unique()
-n_train = int(len(unique_ids) * 0.7)
-train_ids = np.random.choice(unique_ids, size=n_train, replace=False)
-test_ids = np.array(list(set(unique_ids) - set(train_ids)))
+is_train_obs = estimation_train['unique_id'].isin(train_ids)
 
-# Split data based on IDs
-train_df = estimation_train[estimation_train['unique_id'].isin(train_ids)]
-test_df = estimation_train[estimation_train['unique_id'].isin(test_ids)]
+train_df = estimation_train[is_train_obs].reset_index(drop=True)
+test_df = estimation_train[~is_train_obs].reset_index(drop=True)
+
+from typing import Tuple
+
+
+def series_wise_holdout(df: pd.DataFrame,
+                        train_size: float,
+                        id_col: str = 'unique_id') -> Tuple[pd.DataFrame, pd.DataFrame]:
+    uids = df[id_col].unique()
+    n_train = int(len(uids) * train_size)
+
+    train_ids = np.random.choice(uids, size=n_train, replace=False)
+
+    is_train_obs = df[id_col].isin(train_ids)
+
+    train_df = df[is_train_obs].reset_index(drop=True)
+    test_df = df[~is_train_obs].reset_index(drop=True)
+
+    return train_df, test_df
+
+
+series_wise_holdout(estimation_train, train_size=0.5)
 
 
 cv = nf.cross_validation(df=estimation_train, val_size=horizon, test_size=horizon, n_windows=None)
