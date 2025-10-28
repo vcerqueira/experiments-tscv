@@ -2,10 +2,11 @@ import os
 import warnings
 
 from neuralforecast import NeuralForecast
+from sklearn.model_selection import KFold
 
 from src.load_data.config import DATASETS, DATA_GROUPS
 from src.neuralnets import ModelsConfig
-from src.config import N_SAMPLES, RETRAIN_FOR_TEST
+from src.config import N_SAMPLES, RETRAIN_FOR_TEST, N_FOLDS
 from src.cv import series_wise_holdout
 
 warnings.filterwarnings('ignore')
@@ -39,6 +40,27 @@ models = ModelsConfig.get_auto_nf_models(horizon=horizon,
                                          n_samples=n_trials)
 
 nf = NeuralForecast(models=models, freq=freq_str)
+
+# note that this is cv on the time series set (80% of time series for train, 20% for testing)
+# partition is done at time series level, not in time dimension
+kfcv = KFold(n_splits=N_FOLDS, random_state=123, shuffle=True)
+
+uids = df['unique_id'].unique()
+# is_train_obs = df[id_col].isin(train_ids)
+# train_df = df[is_train_obs].reset_index(drop=True)
+# test_df = df[~is_train_obs].reset_index(drop=True)
+
+results = []
+for j, (train_index, test_index) in enumerate(kfcv.split(uids)):
+    print(f"Fold {j}:")
+    print(f"  Train: index={train_index}")
+    print(f"  Test:  index={test_index}")
+
+    train_uids = uids[train_index]
+    is_train_obs = df[id_col].isin(train_ids)
+
+    train_df = df[is_train_obs].reset_index(drop=True)
+    test_df = df[~is_train_obs].reset_index(drop=True)
 
 # -- series-wise holdout split on estimation_train
 # --- this will give us train and test sets with different series for the inner cv
