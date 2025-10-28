@@ -1,14 +1,11 @@
 import os
 import warnings
 
-import numpy as np
-import pandas as pd
 from neuralforecast import NeuralForecast
 
 from src.load_data.config import DATASETS, DATA_GROUPS
 from src.neuralnets import ModelsConfig
 from src.config import N_SAMPLES, RETRAIN_FOR_TEST
-from src.cv import series_wise_holdout
 
 warnings.filterwarnings('ignore')
 
@@ -31,46 +28,31 @@ df, horizon, n_lags, freq_str, freq_int = data_loader.load_everything(group, sam
 estimation_train, estimation_test = data_loader.time_wise_split(df, horizon=horizon)
 
 models = ModelsConfig.get_auto_nf_models(horizon=horizon,
+                                         n_samples=n_trials,
                                          try_mps=False,
-                                         limit_epochs=True,
-                                         n_samples=n_trials)
+                                         limit_epochs=True)
 
 # ---- model setup
 nf = NeuralForecast(models=models, freq=freq_str)
 
-
-train, test = series_wise_holdout(estimation_train, train_size=0.7)
-
-train_insample, train_outsample = data_loader.time_wise_split(train, horizon=horizon)
-test_insample, test_outsample = data_loader.time_wise_split(test, horizon=horizon)
+cv = nf.cross_validation(df=estimation_train, val_size=horizon, test_size=horizon, n_windows=None)
 
 
-nf.fit(df=train_insample, val_size=horizon)
+nf.models[0].results_
 
-fcst_oos = nf.predict(df = test_insample)
-
-cv_inner = fcst_oos.merge(test_outsample, on=['ds', 'unique_id'], how='right')
-
-
-#
-
+from pprint import pprint
+pprint(nf.models[0].results[0].metrics)
+pprint(nf.models[0].results[1].metrics)
+pprint(nf.models[0].results.get_best_result().metrics)
 
 fcst = nf.predict(df=estimation_train)
 
+optim_models = []
+for mod in nf.models:
+    opm_mod = ModelsConfig.MODEL_CLASSES[mod.alias](**mod.results.get_best_result().config)
 
+    optim_models.append(opm_mod)
 
-
-
-
-if retrain:
-    optim_models = ModelsConfig.get_best_configs(nf)
-
-    nf_rt = NeuralForecast(models=optim_models, freq=freq_str)
-    nf_rt.fit(df=estimation_train, val_size=horizon)
-    fcst_rt = nf_rt.predict(df=estimation_train)
-
-print(fcst)
-
-cv = fcst.merge(estimation_test, on=['ds', 'unique_id'], how='right')
-
-# cv.to_csv(f'assets/results/{data_name},{group},dry-run.csv', index=True)
+nf_rt = NeuralForecast(models=optim_models, freq=freq_str)
+nf_rt.fit(df=estimation_train, val_size=horizon)
+fcst_rt = nf_rt.predict(df=estimation_train)
