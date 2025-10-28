@@ -1,8 +1,6 @@
 import os
 import warnings
 
-import numpy as np
-import pandas as pd
 from neuralforecast import NeuralForecast
 
 from src.load_data.config import DATASETS, DATA_GROUPS
@@ -28,39 +26,42 @@ df, horizon, n_lags, freq_str, freq_int = data_loader.load_everything(group, sam
 # df = data_loader.get_uid_tails(df, tail_size=100)
 # df = data_loader.dummify_series(df)
 
+# - split dataset by time
+# -- estimation_train is used for inner cv and final training
+# ----- the data we use to get performance estimations
+# -- estimation_test is only used at the end to see how well our estimation worked
 estimation_train, estimation_test = data_loader.time_wise_split(df, horizon=horizon)
+
+# ---- model setup
 
 models = ModelsConfig.get_auto_nf_models(horizon=horizon,
                                          try_mps=False,
                                          limit_epochs=True,
                                          n_samples=n_trials)
 
-# ---- model setup
 nf = NeuralForecast(models=models, freq=freq_str)
 
-
+# -- series-wise holdout split on estimation_train
+# --- this will give us train and test sets with different series for the inner cv
 train, test = series_wise_holdout(estimation_train, train_size=0.7)
 
-train_insample, train_outsample = data_loader.time_wise_split(train, horizon=horizon)
+# --- inner cv setup
+# --- we split train and test further by time to get insample and outsample parts
+# --- training is done using train_insample; train_outsample is not used.
+# --- testing is done using test_outsample; test_insample is used for generating forecasts
+train_insample, _ = data_loader.time_wise_split(train, horizon=horizon)
 test_insample, test_outsample = data_loader.time_wise_split(test, horizon=horizon)
-
 
 nf.fit(df=train_insample, val_size=horizon)
 
-fcst_oos = nf.predict(df = test_insample)
+fcst_outsample = nf.predict(df=test_insample)
 
-cv_inner = fcst_oos.merge(test_outsample, on=['ds', 'unique_id'], how='right')
-
+cv_inner = fcst_outsample.merge(test_outsample, on=['ds', 'unique_id'], how='right')
 
 #
 
 
 fcst = nf.predict(df=estimation_train)
-
-
-
-
-
 
 if retrain:
     optim_models = ModelsConfig.get_best_configs(nf)
@@ -68,8 +69,6 @@ if retrain:
     nf_rt = NeuralForecast(models=optim_models, freq=freq_str)
     nf_rt.fit(df=estimation_train, val_size=horizon)
     fcst_rt = nf_rt.predict(df=estimation_train)
-
-print(fcst)
 
 cv = fcst.merge(estimation_test, on=['ds', 'unique_id'], how='right')
 
