@@ -1,6 +1,7 @@
 import os
 import warnings
 
+import pandas as pd
 from neuralforecast import NeuralForecast
 from sklearn.model_selection import KFold
 
@@ -50,6 +51,25 @@ uids = df['unique_id'].unique()
 # train_df = df[is_train_obs].reset_index(drop=True)
 # test_df = df[~is_train_obs].reset_index(drop=True)
 
+
+def get_all_config_results(nf: NeuralForecast):
+    # nf.models[0].results[0].metrics['loss']
+    # nf.models[0].results[0].metrics['config']
+
+    scores = []
+    for mod in nf.models:
+        print(f"Model: {mod.alias}")
+        for i, res in enumerate(mod.results):
+            scores.append({
+                'model': mod.alias,
+                'config_idx': i,
+                'loss': res.metrics['loss'],
+                'config': res.config
+            })
+
+    return scores
+
+scores_folds = []
 results = []
 for j, (train_index, test_index) in enumerate(kfcv.split(uids)):
     print(f"Fold {j}:")
@@ -57,27 +77,32 @@ for j, (train_index, test_index) in enumerate(kfcv.split(uids)):
     print(f"  Test:  index={test_index}")
 
     train_uids = uids[train_index]
-    is_train_obs = df[id_col].isin(train_ids)
+    is_train_obs = df['unique_id'].isin(train_uids)
 
-    train_df = df[is_train_obs].reset_index(drop=True)
-    test_df = df[~is_train_obs].reset_index(drop=True)
+    train = df[is_train_obs].reset_index(drop=True)
+    test = df[~is_train_obs].reset_index(drop=True)
 
-# -- series-wise holdout split on estimation_train
-# --- this will give us train and test sets with different series for the inner cv
-train, test = series_wise_holdout(estimation_train, train_size=0.7)
+    # --- inner cv setup
+    # --- we split train and test further by time to get insample and outsample parts
+    # --- training is done using train_insample; train_outsample is not used.
+    # --- testing is done using test_outsample; test_insample is used for generating forecasts
+    train_insample, _ = data_loader.time_wise_split(train, horizon=horizon)
+    test_insample, test_outsample = data_loader.time_wise_split(test, horizon=horizon)
 
-# --- inner cv setup
-# --- we split train and test further by time to get insample and outsample parts
-# --- training is done using train_insample; train_outsample is not used.
-# --- testing is done using test_outsample; test_insample is used for generating forecasts
-train_insample, _ = data_loader.time_wise_split(train, horizon=horizon)
-test_insample, test_outsample = data_loader.time_wise_split(test, horizon=horizon)
+    nf.fit(df=train_insample, val_size=horizon)
 
-nf.fit(df=train_insample, val_size=horizon)
 
-fcst_outsample = nf.predict(df=test_insample)
+    fcst_outsample = nf.predict(df=test_insample)
 
-cv_inner = fcst_outsample.merge(test_outsample, on=['ds', 'unique_id'], how='right')
+    cv_inner = fcst_outsample.merge(test_outsample, on=['ds', 'unique_id'], how='right')
+
+    sc = get_all_config_results(nf)
+    scores_folds.append(sc)
+
+
+scores_folds[0]
+pd.DataFrame(scores_folds)
+
 
 # inference on estimation_train
 fcst = nf.predict(df=estimation_train)
