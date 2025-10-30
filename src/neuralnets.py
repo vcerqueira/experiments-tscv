@@ -1,5 +1,9 @@
-from typing import Optional
+from typing import Optional, List, Union
+import hashlib
+import json
 
+import numpy as np
+import pandas as pd
 from neuralforecast import NeuralForecast
 from neuralforecast.losses.pytorch import MAE
 from neuralforecast.auto import (AutoGRU,
@@ -104,11 +108,58 @@ class ModelsConfig:
 
         return models
 
+    @staticmethod
+    def get_all_config_results(nf: NeuralForecast):
+
+        scores = []
+        for mod in nf.models:
+            print(f"Model: {mod.alias}")
+            for i, res in enumerate(mod.results):
+                res.config['learning_rate'] = np.round(res.config['learning_rate'], 5)
+
+                conf_str = {k: str(v) for k, v in res.config.items()}
+                sorted_string = json.dumps(conf_str, sort_keys=True)
+                hash_value = hashlib.md5(sorted_string.encode()).hexdigest()
+
+                scores.append({
+                    'model': mod.alias,
+                    'config_idx': i,
+                    'loss': res.metrics['loss'],
+                    'config': res.config,
+                    'hash_value': hash_value
+                })
+
+        return scores
+
     @classmethod
-    def get_best_configs(cls, nf: NeuralForecast):
+    def get_best_configs(cls, nf: Union[NeuralForecast, List]) -> List:
+        if isinstance(nf, List):
+            return cls._get_best_configs_from_folds(nf)
+
         optim_models = []
         for mod in nf.models:
             opm_mod = cls.MODEL_CLASSES[mod.alias](**mod.results.get_best_result().config)
+
+            optim_models.append(opm_mod)
+
+        return optim_models
+
+    @classmethod
+    def _get_best_configs_from_folds(cls, fold_scores: List) -> List:
+        folds_fl = [item for sublist in fold_scores for item in sublist]
+
+        folds_df = pd.DataFrame(folds_fl)
+
+        folds_avg = folds_df.groupby(['model', 'hash_value']).mean(numeric_only=True)
+
+        best_configs = folds_avg.loc[folds_avg.groupby('model')['loss'].idxmin()].reset_index()
+
+        optim_models = []
+        for idx, row in best_configs.iterrows():
+            config_inst = folds_df.query("model == @row['model'] and hash_value == @row['hash_value']")
+            config = config_inst.iloc[0]['config']
+
+            opm_mod = cls.MODEL_CLASSES[row['model']](**config)
 
             optim_models.append(opm_mod)
 

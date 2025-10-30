@@ -1,7 +1,6 @@
 import os
 import warnings
-import hashlib
-import json
+
 
 import numpy as np
 import pandas as pd
@@ -10,8 +9,7 @@ from sklearn.model_selection import KFold
 
 from src.load_data.config import DATASETS, DATA_GROUPS
 from src.neuralnets import ModelsConfig
-from src.config import N_SAMPLES, RETRAIN_FOR_TEST, N_FOLDS
-from src.cv import series_wise_holdout
+from src.config import N_SAMPLES, RETRAIN_FOR_TEST, N_FOLDS, SEED
 
 warnings.filterwarnings('ignore')
 
@@ -47,7 +45,7 @@ nf = NeuralForecast(models=models, freq=freq_str)
 
 # note that this is cv on the time series set (80% of time series for train, 20% for testing)
 # partition is done at time series level, not in time dimension
-kfcv = KFold(n_splits=N_FOLDS, random_state=123, shuffle=True)
+kfcv = KFold(n_splits=N_FOLDS, random_state=SEED, shuffle=True)
 
 uids = df['unique_id'].unique()
 
@@ -56,31 +54,6 @@ uids = df['unique_id'].unique()
 # train_df = df[is_train_obs].reset_index(drop=True)
 # test_df = df[~is_train_obs].reset_index(drop=True)
 
-
-def get_all_config_results(nf: NeuralForecast):
-    # nf.models[0].results[0].metrics['loss']
-    # nf.models[0].results[0].metrics['config']
-
-    scores = []
-    for mod in nf.models:
-        print(f"Model: {mod.alias}")
-        for i, res in enumerate(mod.results):
-            print(i)
-            res.config['learning_rate'] = np.round(res.config['learning_rate'], 5)
-
-            conf_str = {k: str(v) for k, v in res.config.items()}
-            sorted_string = json.dumps(conf_str, sort_keys=True)
-            hash_value = hashlib.md5(sorted_string.encode()).hexdigest()
-
-            scores.append({
-                'model': mod.alias,
-                'config_idx': i,
-                'loss': res.metrics['loss'],
-                'config': res.config,
-                'hash_value': hash_value
-            })
-
-    return scores
 
 
 scores_folds = []
@@ -105,7 +78,7 @@ for j, (train_index, test_index) in enumerate(kfcv.split(uids)):
     train_insample, _ = data_loader.time_wise_split(train, horizon=horizon)
     test_insample, test_outsample = data_loader.time_wise_split(test, horizon=horizon)
 
-    np.random.seed(123)
+    np.random.seed(SEED)
     nf.fit(df=train_insample, val_size=horizon)
 
     fcst_outsample = nf.predict(df=test_insample)
@@ -115,16 +88,11 @@ for j, (train_index, test_index) in enumerate(kfcv.split(uids)):
     sc = get_all_config_results(nf)
     scores_folds.append(sc)
 
-scores_folds[0]
-flattened = [item for sublist in scores_folds for item in sublist]
-df2 = pd.DataFrame(flattened)
-print(df2)
-
 # inference on estimation_train
 fcst = nf.predict(df=estimation_train)
 
 if retrain:
-    optim_models = ModelsConfig.get_best_configs(nf)
+    optim_models = ModelsConfig.get_best_configs(scores_folds)
 
     nf_rt = NeuralForecast(models=optim_models, freq=freq_str)
     nf_rt.fit(df=estimation_train, val_size=horizon)
