@@ -80,6 +80,7 @@ for j, (train_index, test_index) in enumerate(kfcv.split(uids)):
     folds_scores.append(valid_scores)
 
 # inference on estimation_train
+# todo aqui isto nao faz sentido, certo? é de uma fold apenas
 fcst = nf.predict(df=estimation_train)
 
 if retrain:
