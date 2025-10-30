@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from neuralforecast import NeuralForecast
-from sklearn.model_selection import KFold
+from sklearn.model_selection import RepeatedKFold
 
 from src.load_data.config import DATASETS, DATA_GROUPS
 from src.neuralnets import ModelsConfig
@@ -44,7 +44,7 @@ nf = NeuralForecast(models=models, freq=freq_str)
 
 # note that this is cv on the time series set (80% of time series for train, 20% for testing)
 # partition is done at time series level, not in time dimension
-kfcv = KFold(n_splits=N_FOLDS, random_state=SEED, shuffle=True)
+kfcv = RepeatedKFold(n_splits=N_FOLDS, random_state=SEED, n_repeats=2)
 
 uids = df['unique_id'].unique()
 

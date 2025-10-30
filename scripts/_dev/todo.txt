@@ -1,15 +1,15 @@
 # todo implement cv approaches
-- [ ] time-wise holdout
-- [ ] series-wise holdout
+- [x] time-wise holdout
+- [x] series-wise holdout
 - [ ] series-wise repeated holdout
-- [ ] series-wise k-fold cv
-- [ ] series-wise repeated k-fold cv
+- [x] series-wise k-fold cv
+- [x] series-wise repeated k-fold cv
 - [ ] series-wise bootstrapping
 - [ ] series-wise repeated bootstrapping
 - [ ] series-wise monte carlo cv
 
 # todo learning methods
-- [ ] auto models: configuration selected using the validation set
+- [x] auto models: configuration selected using the validation set
 - [ ] pre-defined pool of models: easier to run
 
 # todo variants
