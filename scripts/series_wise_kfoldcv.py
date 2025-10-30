@@ -1,6 +1,9 @@
 import os
 import warnings
+import hashlib
+import json
 
+import numpy as np
 import pandas as pd
 from neuralforecast import NeuralForecast
 from sklearn.model_selection import KFold
@@ -47,6 +50,8 @@ nf = NeuralForecast(models=models, freq=freq_str)
 kfcv = KFold(n_splits=N_FOLDS, random_state=123, shuffle=True)
 
 uids = df['unique_id'].unique()
+
+
 # is_train_obs = df[id_col].isin(train_ids)
 # train_df = df[is_train_obs].reset_index(drop=True)
 # test_df = df[~is_train_obs].reset_index(drop=True)
@@ -60,18 +65,29 @@ def get_all_config_results(nf: NeuralForecast):
     for mod in nf.models:
         print(f"Model: {mod.alias}")
         for i, res in enumerate(mod.results):
+            print(i)
+            res.config['learning_rate'] = np.round(res.config['learning_rate'], 5)
+
+            conf_str = {k: str(v) for k, v in res.config.items()}
+            sorted_string = json.dumps(conf_str, sort_keys=True)
+            hash_value = hashlib.md5(sorted_string.encode()).hexdigest()
+
             scores.append({
                 'model': mod.alias,
                 'config_idx': i,
                 'loss': res.metrics['loss'],
-                'config': res.config
+                'config': res.config,
+                'hash_value': hash_value
             })
 
     return scores
 
+
 scores_folds = []
 results = []
 for j, (train_index, test_index) in enumerate(kfcv.split(uids)):
+    if j > 1:
+        continue
     print(f"Fold {j}:")
     print(f"  Train: index={train_index}")
     print(f"  Test:  index={test_index}")
@@ -89,8 +105,8 @@ for j, (train_index, test_index) in enumerate(kfcv.split(uids)):
     train_insample, _ = data_loader.time_wise_split(train, horizon=horizon)
     test_insample, test_outsample = data_loader.time_wise_split(test, horizon=horizon)
 
+    np.random.seed(123)
     nf.fit(df=train_insample, val_size=horizon)
-
 
     fcst_outsample = nf.predict(df=test_insample)
 
@@ -99,10 +115,10 @@ for j, (train_index, test_index) in enumerate(kfcv.split(uids)):
     sc = get_all_config_results(nf)
     scores_folds.append(sc)
 
-
 scores_folds[0]
-pd.DataFrame(scores_folds)
-
+flattened = [item for sublist in scores_folds for item in sublist]
+df2 = pd.DataFrame(flattened)
+print(df2)
 
 # inference on estimation_train
 fcst = nf.predict(df=estimation_train)

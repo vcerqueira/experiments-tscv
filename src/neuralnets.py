@@ -87,7 +87,7 @@ class ModelsConfig:
                 mod.default_config['accelerator'] = 'cpu'
 
             if limit_epochs:
-                mod.default_config['max_steps'] = 20
+                mod.default_config['max_steps'] = 2
 
             if limit_val_batches is not None:
                 mod.default_config['limit_val_batches'] = limit_val_batches
