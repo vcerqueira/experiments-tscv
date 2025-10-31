@@ -4,9 +4,9 @@
 - [x] series-wise repeated holdout
 - [x] series-wise k-fold cv
 - [x] series-wise repeated k-fold cv
-- [ ] series-wise bootstrapping
-- [ ] series-wise repeated bootstrapping
-- [ ] series-wise monte carlo cv
+- [x] series-wise bootstrapping
+- [x] series-wise repeated bootstrapping
+- [x] series-wise monte carlo cv
 
 # todo learning methods
 - [x] auto models: configuration selected using the validation set
