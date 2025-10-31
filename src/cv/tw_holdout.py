@@ -1,7 +1,3 @@
-from typing import Tuple
-
-import numpy as np
-import pandas as pd
 from neuralforecast import NeuralForecast
 
 from src.neuralnets import ModelsConfig
@@ -30,18 +26,18 @@ def time_wise_holdout(train, test, models, freq, horizon):
 
     return cv_inner, cv, cv_rt
 
-
-def series_wise_holdout(df: pd.DataFrame,
-                        train_size: float,
-                        id_col: str = 'unique_id') -> Tuple[pd.DataFrame, pd.DataFrame]:
-    uids = df[id_col].unique()
-    n_train = int(len(uids) * train_size)
-
-    train_ids = np.random.choice(uids, size=n_train, replace=False)
-
-    is_train_obs = df[id_col].isin(train_ids)
-
-    train_df = df[is_train_obs].reset_index(drop=True)
-    test_df = df[~is_train_obs].reset_index(drop=True)
-
-    return train_df, test_df
+#
+# def series_wise_holdout(df: pd.DataFrame,
+#                         train_size: float,
+#                         id_col: str = 'unique_id') -> Tuple[pd.DataFrame, pd.DataFrame]:
+#     uids = df[id_col].unique()
+#     n_train = int(len(uids) * train_size)
+#
+#     train_ids = np.random.choice(uids, size=n_train, replace=False)
+#
+#     is_train_obs = df[id_col].isin(train_ids)
+#
+#     train_df = df[is_train_obs].reset_index(drop=True)
+#     test_df = df[~is_train_obs].reset_index(drop=True)
+#
+#     return train_df, test_df
