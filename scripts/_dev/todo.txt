@@ -10,6 +10,7 @@
 
 # todo learning methods
 - [x] auto models: configuration selected using the validation set
+    - problem is, the specific configuration may vary. so we're estimating the workflow
 - [ ] pre-defined pool of models: easier to run
 
 # todo variants
