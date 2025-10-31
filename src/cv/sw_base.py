@@ -37,11 +37,16 @@ class SeriesWiseTimeSeriesCV(BaseCrossValidator):
     def get_sets_from_idx(self, df: pd.DataFrame, uids: np.ndarray, train_idx: np.ndarray, test_idx: np.ndarray):
         train_uids, test_uids = uids[train_idx], uids[test_idx]
 
-        is_train_obs = df[self.id_col].isin(train_uids)
-        is_test_obs = df[self.id_col].isin(test_uids)
+        # reflect repetitions in train_idx (important for bootstrapping)
+        train_df = pd.concat(
+            [df[df[self.id_col] == uid] for uid in train_uids],
+            ignore_index=True
+        )
 
-        train_df = df[is_train_obs].reset_index(drop=True)
-        test_df = df[is_test_obs].reset_index(drop=True)
+        test_df = pd.concat(
+            [df[df[self.id_col] == uid] for uid in test_uids],
+            ignore_index=True
+        )
 
         return train_df, test_df
 
