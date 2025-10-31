@@ -47,4 +47,3 @@ class SeriesWiseRepeatedBootstrap(SeriesWiseTimeSeriesCV, ABC):
             train_idx = np.random.choice(indices, size=n_train, replace=True)
             test_idx = np.setdiff1d(indices, np.unique(train_idx))
             yield train_idx, test_idx
-
