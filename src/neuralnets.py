@@ -7,6 +7,9 @@ import pandas as pd
 from neuralforecast import NeuralForecast
 from neuralforecast.losses.pytorch import MAE
 from neuralforecast.auto import (AutoGRU,
+                                 AutoNBEATS,
+                                 AutoTiDE,
+                                 AutoNLinear,
                                  AutoKAN,
                                  AutoMLP,
                                  AutoLSTM,
@@ -21,6 +24,9 @@ from neuralforecast.auto import (AutoGRU,
 
 from neuralforecast.models import (GRU,
                                    KAN,
+                                   NBEATS,
+                                   TiDE,
+                                   NLinear,
                                    MLP,
                                    LSTM,
                                    DLinear,
@@ -37,11 +43,14 @@ class ModelsConfig:
     AUTO_MODEL_CLASSES = {
         'AutoKAN': AutoKAN,
         'AutoMLP': AutoMLP,
-        # 'AutoDLinear': AutoDLinear,
-        # 'AutoNHITS': AutoNHITS,
-        # 'AutoDeepNPTS': AutoDeepNPTS,
+        'AutoDLinear': AutoDLinear,
+        'AutoNHITS': AutoNHITS,
+        'AutoDeepNPTS': AutoDeepNPTS,
         # 'AutoTFT': AutoTFT,
-        # 'AutoPatchTST': AutoPatchTST,
+        'AutoPatchTST': AutoPatchTST,
+        'AutoNBEATS': AutoNBEATS,
+        'AutoTiDE': AutoTiDE,
+        'AutoNLinear': AutoNLinear,
         # 'AutoGRU': AutoGRU,
         # 'AutoDeepAR': AutoDeepAR,
         # 'AutoLSTM': AutoLSTM,
@@ -55,6 +64,9 @@ class ModelsConfig:
         'AutoDLinear': DLinear,
         'AutoNHITS': NHITS,
         'AutoDeepNPTS': DeepNPTS,
+        'AutoNBEATS': NBEATS,
+        'AutoTiDE': TiDE,
+        'AutoNLinear': NLinear,
         'AutoTFT': TFT,
         'AutoPatchTST': PatchTST,
         'AutoGRU': GRU,
@@ -66,6 +78,7 @@ class ModelsConfig:
 
     NEED_CPU = ['AutoGRU',
                 'AutoDeepNPTS',
+                'AutoPatchTST',
                 'AutoDeepAR',
                 'AutoLSTM',
                 'AutoKAN',
@@ -115,6 +128,7 @@ class ModelsConfig:
         for mod in nf.models:
             print(f"Model: {mod.alias}")
             for i, res in enumerate(mod.results):
+                print(res)
                 res.config['learning_rate'] = np.round(res.config['learning_rate'], 5)
 
                 conf_str = {k: str(v) for k, v in res.config.items()}
