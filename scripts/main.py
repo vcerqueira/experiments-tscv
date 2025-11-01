@@ -26,22 +26,22 @@ data_loader = DATASETS[data_name]
 
 n_uids, n_trials = (30, 2) if DRY_RUN else (None, N_SAMPLES)
 
-df, horizon, _, freq_str, _ = data_loader.load_everything(group, sample_n_uid=n_uids)
+df, h, _, freq_str, _ = data_loader.load_everything(group, sample_n_uid=n_uids)
 # df, horizon, n_lags, freq_str, freq_int = data_loader.load_everything(group)
 
 # - split dataset by time
 # -- estimation_train is used for inner cv and final training
 # ----- the data we use to get performance estimations
 # -- estimation_test is only used at the end to see how well our estimation worked
-est_train, est_test = data_loader.time_wise_split(df, horizon=horizon)
+est_train, est_test = data_loader.time_wise_split(df, horizon=h)
 
 
 def run_cross_validation(estimation_train: pd.DataFrame,
                          estimation_test: pd.DataFrame,
                          cv_method: str,
-                         models: List,
+                         nf_models: List,
                          horizon: int,
-                         freq_str: str,
+                         freq: str,
                          random_state: int):
     cv = CV_METHODS[cv_method](**CV_METHODS_PARAMS[cv_method])
 
@@ -53,8 +53,8 @@ def run_cross_validation(estimation_train: pd.DataFrame,
         print(f"  Train: index={train_index}")
         print(f"  Test:  index={test_index}")
 
-        models_ = copy.deepcopy(models)
-        nf = NeuralForecast(models=models_, freq=freq_str)
+        models_ = copy.deepcopy(nf_models)
+        nf = NeuralForecast(models=models_, freq=freq)
 
         fold_train, fold_test = cv.get_sets_from_idx(df=estimation_train,
                                                      uids=uids,
@@ -92,7 +92,7 @@ def run_cross_validation(estimation_train: pd.DataFrame,
 
 if __name__ == '__main__':
 
-    models = ModelsConfig.get_auto_nf_models(horizon=horizon,
+    models = ModelsConfig.get_auto_nf_models(horizon=h,
                                              try_mps=False,
                                              limit_epochs=True,
                                              n_samples=N_SAMPLES)
@@ -102,8 +102,9 @@ if __name__ == '__main__':
         cv_result, cv_inner_result = run_cross_validation(cv_method=method_name,
                                                           estimation_train=est_train,
                                                           estimation_test=est_test,
-                                                          freq_str=freq_str, horizon=horizon,
-                                                          models=models,
+                                                          freq=freq_str,
+                                                          horizon=h,
+                                                          nf_models=models,
                                                           random_state=SEED)
 
         cv_result.to_csv(f'assets/results/{data_name},{group},{method_name},outer.csv', index=True)
@@ -112,7 +113,7 @@ if __name__ == '__main__':
     tw_cv, tw_cv_inner = time_wise_holdout(train=est_train,
                                            test=est_test,
                                            freq=freq_str,
-                                           horizon=horizon,
+                                           horizon=h,
                                            models=models)
 
     tw_cv.to_csv(f'assets/results/{data_name},{group},TimeHoldout,outer.csv', index=True)
