@@ -94,6 +94,8 @@ def run_cross_validation(estimation_train: pd.DataFrame,
     return cv, cv_inner
 
 
+# are the naming of uids ok for bootstrap? because of repeats
+
 if __name__ == '__main__':
 
     models = ModelsConfig.get_auto_nf_models(horizon=h,
