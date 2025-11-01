@@ -10,7 +10,7 @@ from neuralforecast import NeuralForecast
 
 from src.load_data.config import DATASETS, DATA_GROUPS
 from src.neuralnets import ModelsConfig
-from src.config import N_SAMPLES, SEED
+from src.config import N_SAMPLES, SEED, LIMIT_EPOCHS, TRY_MPS
 from src.cv import CV_METHODS, CV_METHODS_PARAMS
 from src.cv.tw_holdout import time_wise_holdout
 
@@ -96,8 +96,8 @@ def run_cross_validation(estimation_train: pd.DataFrame,
 if __name__ == '__main__':
 
     models = ModelsConfig.get_auto_nf_models(horizon=h,
-                                             try_mps=True,
-                                             limit_epochs=True,
+                                             try_mps=TRY_MPS,
+                                             limit_epochs=LIMIT_EPOCHS,
                                              n_samples=N_SAMPLES)
 
     for method_name in CV_METHODS:
