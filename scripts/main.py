@@ -19,7 +19,6 @@ warnings.filterwarnings('ignore')
 os.environ['TUNE_DISABLE_STRICT_METRIC_CHECKING'] = '1'
 
 # ---- data loading and partitioning
-DRY_RUN = True
 GROUP_IDX = 0
 data_name, group = DATA_GROUPS[GROUP_IDX]
 print(data_name, group)
@@ -28,10 +27,8 @@ data_loader = DATASETS[data_name]
 results_dir = Path('../assets/results')
 results_dir.mkdir(parents=True, exist_ok=True)
 
-n_uids, n_trials = (30, 2) if DRY_RUN else (None, N_SAMPLES)
-
-df, h, _, freq_str, _ = data_loader.load_everything(group, sample_n_uid=n_uids)
-# df, horizon, n_lags, freq_str, freq_int = data_loader.load_everything(group)
+# df, h, _, freq_str, _ = data_loader.load_everything(group, sample_n_uid=30)
+df, h, _, freq_str, _ = data_loader.load_everything(group)
 
 # - split dataset by time
 # -- estimation_train is used for inner cv and final training
@@ -113,9 +110,6 @@ if __name__ == '__main__':
                                                           nf_models=models,
                                                           random_state=SEED)
 
-        print(cv_result)
-        print(cv_inner_result)
-
         cv_result.to_csv(results_dir / f'{data_name},{group},{method_name},outer.csv', index=False)
         cv_inner_result.to_csv(results_dir / f'{data_name},{group},{method_name},inner.csv', index=False)
 
@@ -125,9 +119,6 @@ if __name__ == '__main__':
                                            freq=freq_str,
                                            horizon=h,
                                            models=models)
-
-    print(tw_cv)
-    print(tw_cv_inner)
 
     tw_cv.to_csv(results_dir / f'{data_name},{group},TimeHoldout,outer.csv', index=False)
     tw_cv_inner.to_csv(results_dir / f'{data_name},{group},TimeHoldout,inner.csv', index=False)
