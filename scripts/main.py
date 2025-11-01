@@ -1,6 +1,7 @@
 import copy
 import os
 import warnings
+from pathlib import Path
 from typing import List
 
 import numpy as np
@@ -23,6 +24,9 @@ GROUP_IDX = 0
 data_name, group = DATA_GROUPS[GROUP_IDX]
 print(data_name, group)
 data_loader = DATASETS[data_name]
+
+results_dir = Path('../assets/results')
+results_dir.mkdir(parents=True, exist_ok=True)
 
 n_uids, n_trials = (30, 2) if DRY_RUN else (None, N_SAMPLES)
 
@@ -58,8 +62,8 @@ def run_cross_validation(estimation_train: pd.DataFrame,
 
         fold_train, fold_test = cv.get_sets_from_idx(df=estimation_train,
                                                      uids=uids,
-                                                     train_index=train_index,
-                                                     test_index=test_index)
+                                                     train_idx=train_index,
+                                                     test_idx=test_index)
 
         f_train_in, _ = cv.time_wise_split(fold_train, horizon=horizon)
         f_test_in, f_test_out = cv.time_wise_split(fold_test, horizon=horizon)
@@ -93,7 +97,7 @@ def run_cross_validation(estimation_train: pd.DataFrame,
 if __name__ == '__main__':
 
     models = ModelsConfig.get_auto_nf_models(horizon=h,
-                                             try_mps=False,
+                                             try_mps=True,
                                              limit_epochs=True,
                                              n_samples=N_SAMPLES)
 
@@ -107,14 +111,21 @@ if __name__ == '__main__':
                                                           nf_models=models,
                                                           random_state=SEED)
 
-        cv_result.to_csv(f'assets/results/{data_name},{group},{method_name},outer.csv', index=True)
-        cv_inner_result.to_csv(f'assets/results/{data_name},{group},{method_name},inner.csv', index=True)
+        print(cv_result)
+        print(cv_inner_result)
 
+        cv_result.to_csv(results_dir / f'{data_name},{group},{method_name},outer.csv', index=False)
+        cv_inner_result.to_csv(results_dir / f'{data_name},{group},{method_name},inner.csv', index=False)
+
+    print(f"Running cross validation for method: Time-wise Holdout")
     tw_cv, tw_cv_inner = time_wise_holdout(train=est_train,
                                            test=est_test,
                                            freq=freq_str,
                                            horizon=h,
                                            models=models)
 
-    tw_cv.to_csv(f'assets/results/{data_name},{group},TimeHoldout,outer.csv', index=True)
-    tw_cv_inner.to_csv(f'assets/results/{data_name},{group},TimeHoldout,inner.csv', index=True)
+    print(tw_cv)
+    print(tw_cv_inner)
+
+    tw_cv.to_csv(results_dir / f'{data_name},{group},TimeHoldout,outer.csv', index=False)
+    tw_cv_inner.to_csv(results_dir / f'{data_name},{group},TimeHoldout,inner.csv', index=False)

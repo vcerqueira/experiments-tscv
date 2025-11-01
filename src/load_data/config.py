@@ -11,10 +11,10 @@ DATASETS = {
 }
 
 DATA_GROUPS = [
-    ('M3', 'Monthly'),
-    ('M3', 'Quarterly'),
     ('Tourism', 'Monthly'),
     ('Tourism', 'Quarterly'),
+    ('M3', 'Monthly'),
+    ('M3', 'Quarterly'),
     ('M4', 'Monthly'),
     ('M4', 'Quarterly'),
     ('M4', 'Weekly'),
