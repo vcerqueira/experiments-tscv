@@ -1,3 +1,4 @@
+# todo refactor when doing result analysis
 import os
 import re
 from pprint import pprint

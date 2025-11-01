@@ -1,3 +1,5 @@
+import copy
+
 from neuralforecast import NeuralForecast
 
 from src.neuralnets import ModelsConfig
@@ -5,7 +7,8 @@ from src.neuralnets import ModelsConfig
 
 def time_wise_holdout(train, test, models, freq, horizon):
     # -- setup
-    nf = NeuralForecast(models=models, freq=freq)
+    models_ = copy.deepcopy(models)
+    nf = NeuralForecast(models=models_, freq=freq)
 
     # -- inner cv
     cv_params = {'val_size': horizon, 'test_size': horizon, 'n_windows': None, }
@@ -20,4 +23,4 @@ def time_wise_holdout(train, test, models, freq, horizon):
     # -- merge with test
     cv_rt = fcst_rt.merge(test, on=['ds', 'unique_id'], how='right')
 
-    return cv_inner, cv_rt
+    return cv_rt, cv_inner

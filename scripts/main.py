@@ -1,15 +1,17 @@
+import copy
 import os
 import warnings
+from typing import List
 
 import numpy as np
 import pandas as pd
 from neuralforecast import NeuralForecast
-from sklearn.model_selection import KFold
 
 from src.load_data.config import DATASETS, DATA_GROUPS
 from src.neuralnets import ModelsConfig
-from src.config import N_SAMPLES, N_FOLDS, SEED
+from src.config import N_SAMPLES, SEED
 from src.cv import CV_METHODS, CV_METHODS_PARAMS
+from src.cv.tw_holdout import time_wise_holdout
 
 warnings.filterwarnings('ignore')
 
@@ -24,71 +26,94 @@ data_loader = DATASETS[data_name]
 
 n_uids, n_trials = (30, 2) if DRY_RUN else (None, N_SAMPLES)
 
-df, horizon, n_lags, freq_str, freq_int = data_loader.load_everything(group, sample_n_uid=n_uids)
+df, horizon, _, freq_str, _ = data_loader.load_everything(group, sample_n_uid=n_uids)
 # df, horizon, n_lags, freq_str, freq_int = data_loader.load_everything(group)
-# df = data_loader.get_uid_tails(df, tail_size=100)
-# df = data_loader.dummify_series(df)
 
 # - split dataset by time
 # -- estimation_train is used for inner cv and final training
 # ----- the data we use to get performance estimations
 # -- estimation_test is only used at the end to see how well our estimation worked
-estimation_train, estimation_test = data_loader.time_wise_split(df, horizon=horizon)
-
-# ---- model setup
-models = ModelsConfig.get_auto_nf_models(horizon=horizon,
-                                         try_mps=False,
-                                         limit_epochs=True,
-                                         n_samples=n_trials)
-
-nf = NeuralForecast(models=models, freq=freq_str)
-
-# note that this is cv on the time series set (80% of time series for train, 20% for testing)
-# partition is done at time series level, not in time dimension
-kfcv = KFold(n_splits=N_FOLDS, random_state=SEED, shuffle=True)
-
-uids = df['unique_id'].unique()
-
-results, folds_scores = [], []
-for j, (train_index, test_index) in enumerate(kfcv.split(uids)):
-    if j > 1:
-        continue
-    print(f"Fold {j}:")
-    print(f"  Train: index={train_index}")
-    print(f"  Test:  index={test_index}")
+est_train, est_test = data_loader.time_wise_split(df, horizon=horizon)
 
 
+def run_cross_validation(estimation_train: pd.DataFrame,
+                         estimation_test: pd.DataFrame,
+                         cv_method: str,
+                         models: List,
+                         horizon: int,
+                         freq_str: str,
+                         random_state: int):
+    cv = CV_METHODS[cv_method](**CV_METHODS_PARAMS[cv_method])
 
-    train_uids = uids[train_index]
-    is_train_obs = df['unique_id'].isin(train_uids)
+    uids = estimation_train['unique_id'].unique()
 
-    train = df[is_train_obs].reset_index(drop=True)
-    test = df[~is_train_obs].reset_index(drop=True)
+    cv_results, cv_folds_config_scores = [], []
+    for j, (train_index, test_index) in enumerate(cv.split(uids)):
+        print(f"Fold {j}:")
+        print(f"  Train: index={train_index}")
+        print(f"  Test:  index={test_index}")
 
-    # --- inner cv setup
-    # --- we split train and test further by time to get insample and outsample parts
-    # --- training is done using train_insample; train_outsample is not used.
-    # --- testing is done using test_outsample; test_insample is used for generating forecasts
-    train_insample, _ = data_loader.time_wise_split(train, horizon=horizon)
-    test_insample, test_outsample = data_loader.time_wise_split(test, horizon=horizon)
+        models_ = copy.deepcopy(models)
+        nf = NeuralForecast(models=models_, freq=freq_str)
 
-    np.random.seed(SEED)
-    nf.fit(df=train_insample, val_size=horizon)
+        fold_train, fold_test = cv.get_sets_from_idx(df=estimation_train,
+                                                     uids=uids,
+                                                     train_index=train_index,
+                                                     test_index=test_index)
 
-    fcst_outsample = nf.predict(df=test_insample)
+        f_train_in, _ = cv.time_wise_split(fold_train, horizon=horizon)
+        f_test_in, f_test_out = cv.time_wise_split(fold_test, horizon=horizon)
 
-    cv_inner = fcst_outsample.merge(test_outsample, on=['ds', 'unique_id'], how='right')
+        np.random.seed(random_state)
+        nf.fit(df=f_train_in, val_size=horizon)
+        fcst_outsample = nf.predict(df=f_test_in)
 
-    valid_scores = ModelsConfig.get_all_config_results(nf)
-    folds_scores.append(valid_scores)
+        fold_cv = fcst_outsample.merge(f_test_out, on=['ds', 'unique_id'], how='right')
 
-# inference on estimation_train
-optim_models = ModelsConfig.get_best_configs(folds_scores)
+        config_scores = ModelsConfig.get_all_config_results(nf)
+        cv_folds_config_scores.append(config_scores)
 
-nf_rt = NeuralForecast(models=optim_models, freq=freq_str)
-nf_rt.fit(df=estimation_train, val_size=horizon)
-fcst = nf_rt.predict(df=estimation_train)
+        # assuming we're aggregating by series, not by fold. we can test this later
+        cv_results.append(fold_cv)
 
-cv = fcst.merge(estimation_test, on=['ds', 'unique_id'], how='right')
+    cv_inner = pd.concat(cv_results)
 
-cv.to_csv(f'assets/results/{data_name},{group},dry-run.csv', index=True)
+    # inference on estimation_train
+    optim_models = ModelsConfig.get_best_configs(cv_folds_config_scores)
+
+    nf_final = NeuralForecast(models=optim_models, freq=freq_str)
+    nf_final.fit(df=estimation_train, val_size=horizon)
+    fcst = nf_final.predict(df=estimation_train)
+
+    cv = fcst.merge(estimation_test, on=['ds', 'unique_id'], how='right')
+
+    return cv, cv_inner
+
+
+if __name__ == '__main__':
+
+    models = ModelsConfig.get_auto_nf_models(horizon=horizon,
+                                             try_mps=False,
+                                             limit_epochs=True,
+                                             n_samples=N_SAMPLES)
+
+    for method_name in CV_METHODS:
+        print(f"Running cross validation for method: {method_name}")
+        cv_result, cv_inner_result = run_cross_validation(cv_method=method_name,
+                                                          estimation_train=est_train,
+                                                          estimation_test=est_test,
+                                                          freq_str=freq_str, horizon=horizon,
+                                                          models=models,
+                                                          random_state=SEED)
+
+        cv_result.to_csv(f'assets/results/{data_name},{group},{method_name},outer.csv', index=True)
+        cv_inner_result.to_csv(f'assets/results/{data_name},{group},{method_name},inner.csv', index=True)
+
+    tw_cv, tw_cv_inner = time_wise_holdout(train=est_train,
+                                           test=est_test,
+                                           freq=freq_str,
+                                           horizon=horizon,
+                                           models=models)
+
+    tw_cv.to_csv(f'assets/results/{data_name},{group},TimeHoldout,outer.csv', index=True)
+    tw_cv_inner.to_csv(f'assets/results/{data_name},{group},TimeHoldout,inner.csv', index=True)
