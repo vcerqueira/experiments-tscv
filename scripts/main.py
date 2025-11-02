@@ -7,6 +7,8 @@ from typing import List
 import numpy as np
 import pandas as pd
 from neuralforecast import NeuralForecast
+from statsforecast import StatsForecast
+from statsforecast.models import SeasonalNaive
 
 from src.load_data.config import DATASETS, DATA_GROUPS
 from src.neuralnets import ModelsConfig
@@ -19,7 +21,7 @@ warnings.filterwarnings('ignore')
 os.environ['TUNE_DISABLE_STRICT_METRIC_CHECKING'] = '1'
 
 # ---- data loading and partitioning
-GROUP_IDX = 0
+GROUP_IDX = 2
 data_name, group = DATA_GROUPS[GROUP_IDX]
 print(data_name, group)
 data_loader = DATASETS[data_name]
@@ -28,7 +30,7 @@ results_dir = Path('../assets/results')
 results_dir.mkdir(parents=True, exist_ok=True)
 
 # df, h, _, freq_str, _ = data_loader.load_everything(group, sample_n_uid=30)
-df, h, _, freq_str, _ = data_loader.load_everything(group)
+df, h, _, freq_str, freq_i = data_loader.load_everything(group)
 
 # - split dataset by time
 # -- estimation_train is used for inner cv and final training
@@ -43,6 +45,7 @@ def run_cross_validation(estimation_train: pd.DataFrame,
                          nf_models: List,
                          horizon: int,
                          freq: str,
+                         freq_int: int,
                          random_state: int):
     cv = CV_METHODS[cv_method](**CV_METHODS_PARAMS[cv_method])
 
@@ -71,10 +74,21 @@ def run_cross_validation(estimation_train: pd.DataFrame,
 
         fold_cv = fcst_outsample.merge(f_test_out, on=['ds', 'unique_id'], how='right')
 
+        sf_inner = StatsForecast(
+            models=[SeasonalNaive(season_length=freq_int)],
+            freq=freq_str,
+            n_jobs=1)
+
+        sf_inner.fit(df=f_test_in)
+        fcst_cv_sf = sf_inner.predict(h=horizon)
+
+        fold_cv = fcst_cv_sf.merge(fold_cv, on=['ds', 'unique_id'], how='right')
+
         config_scores = ModelsConfig.get_all_config_results(nf)
         cv_folds_config_scores.append(config_scores)
 
         # assuming we're aggregating by series, not by fold. we can test this later
+        fold_cv['fold'] = j
         cv_results.append(fold_cv)
 
     cv_inner = pd.concat(cv_results)
@@ -88,6 +102,16 @@ def run_cross_validation(estimation_train: pd.DataFrame,
 
     cv = fcst.merge(estimation_test, on=['ds', 'unique_id'], how='right')
 
+    sf = StatsForecast(
+        models=[SeasonalNaive(season_length=freq_int)],
+        freq=freq_str,
+        n_jobs=1)
+
+    sf.fit(df=estimation_train)
+    fcst_sf = sf.predict(h=horizon)
+
+    cv = fcst_sf.merge(cv, on=['ds', 'unique_id'], how='right')
+
     return cv, cv_inner
 
 
@@ -100,25 +124,27 @@ if __name__ == '__main__':
                                              limit_epochs=LIMIT_EPOCHS,
                                              n_samples=N_SAMPLES)
 
+    print(f"Running cross validation for method: Time-wise Holdout")
+    tw_cv, tw_cv_inner = time_wise_holdout(train=est_train,
+                                           test=est_test,
+                                           freq=freq_str,
+                                           freq_int=freq_i,
+                                           horizon=h,
+                                           models=models)
+
+    tw_cv.to_csv(results_dir / f'{data_name},{group},TimeHoldout,outer.csv', index=False)
+    tw_cv_inner.to_csv(results_dir / f'{data_name},{group},TimeHoldout,inner.csv', index=False)
+
     for method_name in CV_METHODS:
         print(f"Running cross validation for method: {method_name}")
         cv_result, cv_inner_result = run_cross_validation(cv_method=method_name,
                                                           estimation_train=est_train,
                                                           estimation_test=est_test,
                                                           freq=freq_str,
+                                                          freq_int=freq_i,
                                                           horizon=h,
                                                           nf_models=models,
                                                           random_state=SEED)
 
         cv_result.to_csv(results_dir / f'{data_name},{group},{method_name},outer.csv', index=False)
         cv_inner_result.to_csv(results_dir / f'{data_name},{group},{method_name},inner.csv', index=False)
-
-    print(f"Running cross validation for method: Time-wise Holdout")
-    tw_cv, tw_cv_inner = time_wise_holdout(train=est_train,
-                                           test=est_test,
-                                           freq=freq_str,
-                                           horizon=h,
-                                           models=models)
-
-    tw_cv.to_csv(results_dir / f'{data_name},{group},TimeHoldout,outer.csv', index=False)
-    tw_cv_inner.to_csv(results_dir / f'{data_name},{group},TimeHoldout,inner.csv', index=False)

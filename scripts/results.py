@@ -1,21 +1,25 @@
 import os
+from functools import partial
 
 import numpy as np
 import pandas as pd
 
-from utilsforecast.losses import smape
+from utilsforecast.losses import smape, mape, mae, rmae
 from modelradar.evaluate.radar import ModelRadar
 
 from src.cv import CV_METHODS
 
 RESULTS_DIR = "assets/results"
+DATASET = 'M3,Monthly'
+
+rmae_sn = partial(rmae, baseline="SeasonalNaive")
 
 cv_methods = [*CV_METHODS] + ['TimeHoldout']
 
 cv_scores = []
 for method in cv_methods:
-    inner_path = os.path.join(RESULTS_DIR, f"Tourism,Monthly,{method},inner.csv")
-    outer_path = os.path.join(RESULTS_DIR, f"Tourism,Monthly,{method},outer.csv")
+    inner_path = os.path.join(RESULTS_DIR, f"{DATASET},{method},inner.csv")
+    outer_path = os.path.join(RESULTS_DIR, f"{DATASET},{method},outer.csv")
 
     if not os.path.isfile(inner_path) or not os.path.isfile(outer_path):
         continue
@@ -27,18 +31,18 @@ for method in cv_methods:
 
     radar_inner = ModelRadar(
         cv_df=cv_inner,
-        metrics=[smape],
-        model_names=["KAN", "MLP"],
-        hardness_reference="MLP",
-        ratios_reference="MLP",
+        metrics=[rmae_sn],
+        model_names=["KAN", "MLP", 'DLinear', 'NHITS', 'DeepNPTS', "SeasonalNaive"],
+        hardness_reference="SeasonalNaive",
+        ratios_reference="SeasonalNaive",
     )
 
     radar_outer = ModelRadar(
         cv_df=cv_outer,
-        metrics=[smape],
-        model_names=["KAN", "MLP"],
-        hardness_reference="MLP",
-        ratios_reference="MLP",
+        metrics=[rmae_sn],
+        model_names=["KAN", "MLP", 'DLinear', 'NHITS', 'DeepNPTS', "SeasonalNaive"],
+        hardness_reference="SeasonalNaive",
+        ratios_reference="SeasonalNaive",
     )
 
     err_inner = radar_inner.evaluate(keep_uids=False)
@@ -48,6 +52,8 @@ for method in cv_methods:
     best_model = err_outer.idxmin()
 
     mean_abs_err = (err_inner - err_outer).abs().mean()
+    mean_err = (err_inner - err_outer).mean()
+    mean_sq_err = ((err_inner - err_outer) ** 2).mean()
     accuracy = int(selected_model == best_model)
     regret = err_outer[selected_model] - err_outer[best_model]
 
@@ -55,10 +61,11 @@ for method in cv_methods:
         {
             'method': method,
             'mean_abs_err': mean_abs_err,
+            'mean_err': mean_err,
+            'mean_sq_err': mean_sq_err,
             'accuracy': accuracy,
             'regret': regret,
         }
     )
-
 
 pd.DataFrame(cv_scores)
