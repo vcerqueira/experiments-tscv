@@ -21,12 +21,13 @@ warnings.filterwarnings('ignore')
 os.environ['TUNE_DISABLE_STRICT_METRIC_CHECKING'] = '1'
 
 # ---- data loading and partitioning
-GROUP_IDX = 2
+GROUP_IDX = 4
 data_name, group = DATA_GROUPS[GROUP_IDX]
 print(data_name, group)
 data_loader = DATASETS[data_name]
 
 results_dir = Path('../assets/results')
+# results_dir = Path('./assets/results')
 results_dir.mkdir(parents=True, exist_ok=True)
 
 # df, h, _, freq_str, _ = data_loader.load_everything(group, sample_n_uid=30)

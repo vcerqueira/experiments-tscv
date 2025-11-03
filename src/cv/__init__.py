@@ -11,9 +11,9 @@ CV_METHODS = {
     'RepeatedHoldout': SeriesWiseRepeatedHoldout,
     'MonteCarlo': SeriesWiseMonteCarlo,
     'Bootstrap': SeriesWiseBootstrap,
-    'RepeatedBootstrap': SeriesWiseRepeatedBootstrap,
+    # 'RepeatedBootstrap': SeriesWiseRepeatedBootstrap,
     'KFold': SeriesWiseKFold,
-    'RepeatedKFold': SeriesWiseRepeatedKFold,
+    # 'RepeatedKFold': SeriesWiseRepeatedKFold,
 }
 
 CV_METHODS_PARAMS = {
