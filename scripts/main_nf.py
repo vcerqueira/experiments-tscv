@@ -15,6 +15,7 @@ from src.neuralnets import ModelsConfig
 from src.config import N_SAMPLES, SEED, LIMIT_EPOCHS, TRY_MPS
 from src.cv import CV_METHODS, CV_METHODS_PARAMS
 from src.cv.tw_holdout import time_wise_holdout
+from src.neuralforecast_ext import NeuralForecast2
 
 warnings.filterwarnings('ignore')
 
@@ -57,44 +58,43 @@ def run_cross_validation(estimation_train: pd.DataFrame,
         print(f"Fold {j}:")
         print(f"  Train: index={train_index}")
         print(f"  Test:  index={test_index}")
+        train_uids, test_uids = uids[train_index], uids[test_index]
 
         models_ = copy.deepcopy(nf_models)
-        nf = NeuralForecast(models=models_, freq=freq)
-
-        fold_train, fold_test = cv.get_sets_from_idx(df=estimation_train,
-                                                     uids=uids,
-                                                     train_idx=train_index,
-                                                     test_idx=test_index)
-
-        f_train_in, _ = cv.time_wise_split(fold_train, horizon=horizon)
-        f_test_in, f_test_out = cv.time_wise_split(fold_test, horizon=horizon)
-
+        nf = NeuralForecast2(models=models_, freq=freq, train_uids=train_uids)
         np.random.seed(random_state)
-        nf.fit(df=f_train_in, val_size=horizon)
-        fcst_outsample = nf.predict(df=f_test_in)
-
-        fold_cv = fcst_outsample.merge(f_test_out, on=['ds', 'unique_id'], how='right')
+        cv_nf = nf.cross_validation(df=estimation_train,
+                                    val_size=horizon,
+                                    test_size=None,
+                                    step_size=1,
+                                    n_windows=horizon)
 
         sf_inner = StatsForecast(
             models=[SeasonalNaive(season_length=freq_int)],
             freq=freq_str,
             n_jobs=1)
 
-        sf_inner.fit(df=f_test_in)
-        fcst_cv_sf = sf_inner.predict(h=horizon)
+        cv_sf = sf_inner.cross_validation(df=estimation_train,
+                                          test_size=None,
+                                          step_size=1,
+                                          n_windows=horizon,
+                                          h=horizon)
 
-        fold_cv = fcst_cv_sf.merge(fold_cv, on=['ds', 'unique_id'], how='right')
+        cv = cv_nf.merge(cv_sf.drop(columns=['y']), on=['ds', 'unique_id','cutoff'])
+        cv = cv[cv['unique_id'].isin(test_uids)]
 
         config_scores = ModelsConfig.get_all_config_results(nf)
         cv_folds_config_scores.append(config_scores)
 
         # assuming we're aggregating by series, not by fold. we can test this later
-        fold_cv['fold'] = j
-        cv_results.append(fold_cv)
+        # cv['fold'] = j
+
+        cv_results.append(cv)
 
     cv_inner = pd.concat(cv_results)
 
     # inference on estimation_train
+    print(cv_folds_config_scores)
     optim_models = ModelsConfig.get_best_configs(cv_folds_config_scores)
 
     nf_final = NeuralForecast(models=optim_models, freq=freq_str)

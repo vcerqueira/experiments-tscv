@@ -10,6 +10,8 @@ from modelradar.evaluate.radar import ModelRadar
 from src.cv import CV_METHODS
 
 RESULTS_DIR = "assets/results"
+# DATASET = 'M4,Monthly'
+# DATASET = 'Tourism,Monthly'
 DATASET = 'M3,Monthly'
 
 rmae_sn = partial(rmae, baseline="SeasonalNaive")
@@ -96,4 +98,6 @@ for method in cv_methods:
         }
     )
 
-pd.DataFrame(cv_scores)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
+pd.DataFrame(cv_scores).round(3)

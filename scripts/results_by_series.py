@@ -10,9 +10,12 @@ from modelradar.evaluate.radar import ModelRadar
 from src.cv import CV_METHODS
 
 RESULTS_DIR = "assets/results"
+# DATASET = 'M3,Monthly'
+# DATASET = 'Tourism,Monthly'
 DATASET = 'M3,Monthly'
 
 rmae_sn = partial(rmae, baseline="SeasonalNaive")
+# rmae_sn = smape
 
 cv_methods = ['TimeHoldout'] + [*CV_METHODS]
 
@@ -91,4 +94,4 @@ for method in cv_methods:
     cv_scores.append(sc)
 
 
-pd.DataFrame(cv_scores)
+pd.DataFrame(cv_scores).round(3)

@@ -11,7 +11,7 @@ from src.load_data.base import LoadDataset
 from src.config import SEED
 
 
-def time_wise_holdout(train, test, models, freq, freq_int, horizon):
+def time_wise_holdout2(train, test, models, freq, freq_int, horizon):
     # -- setup
     models_ = copy.deepcopy(models)
     nf = NeuralForecast(models=models_, freq=freq)
@@ -56,14 +56,14 @@ def time_wise_holdout(train, test, models, freq, freq_int, horizon):
     return cv_rt, cv_inner
 
 
-def time_wise_holdout2(train, test, models, freq, freq_int, horizon):
+def time_wise_holdout(train, test, complete_df, models, freq, freq_int, horizon):
     # -- setup
     models_ = copy.deepcopy(models)
     nf = NeuralForecast(models=models_, freq=freq)
     sf_inner = StatsForecast(models=[SeasonalNaive(season_length=freq_int)], freq=freq, n_jobs=1)
 
-    # -- inner cv
-    cv_params = {'val_size': horizon, 'test_size': horizon, 'n_windows': None, }
+    # -- inner cv,
+    cv_params = {'val_size': horizon, 'test_size': None, 'n_windows': horizon, 'step_size': 1}
     cv_inner = nf.cross_validation(df=train, **cv_params)
     cv_inner['fold'] = 0
     cv_sf_inner = sf_inner.cross_validation(df=train, h=horizon, test_size=horizon, n_windows=None)
@@ -71,21 +71,27 @@ def time_wise_holdout2(train, test, models, freq, freq_int, horizon):
 
     # -- cv "inference"
     optim_models = ModelsConfig.get_best_configs(nf)
-    nf_rt = NeuralForecast(models=optim_models, freq=freq)
-    nf_rt.fit(df=train, val_size=horizon)
-    fcst_rt = nf_rt.predict(df=train)
 
-    # -- merge with test
-    cv_rt = fcst_rt.merge(test, on=['ds', 'unique_id'], how='right')
+    nf_final = NeuralForecast(models=optim_models, freq=freq)
+    cv_nf_f = nf_final.cross_validation(df=complete_df,
+                                        val_size=horizon,
+                                        test_size=horizon * 3,
+                                        step_size=1,
+                                        n_windows=None)
 
-    sf_outer = StatsForecast(
+    # cv = fcst.merge(estimation_test, on=['ds', 'unique_id'], how='right')
+
+    sf = StatsForecast(
         models=[SeasonalNaive(season_length=freq_int)],
         freq=freq,
         n_jobs=1)
 
-    sf_outer.fit(df=train)
-    fcst_sf = sf_outer.predict(h=horizon)
+    cv_sf_f = sf.cross_validation(df=complete_df,
+                                  h=horizon,
+                                  test_size=horizon * 3,
+                                  step_size=1,
+                                  n_windows=None)
 
-    cv_rt = fcst_sf.merge(cv_rt, on=['ds', 'unique_id'], how='right')
+    cv_outer = cv_nf_f.merge(cv_sf_f.drop(columns=['y']), on=['ds', 'unique_id', 'cutoff'])
 
-    return cv_rt, cv_inner
+    return cv_outer, cv_inner
