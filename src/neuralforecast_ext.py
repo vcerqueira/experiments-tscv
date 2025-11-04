@@ -6,7 +6,6 @@ import pandas as pd
 
 import utilsforecast.processing as ufp
 from coreforecast.grouped_array import GroupedArray
-
 from utilsforecast.compat import DataFrame, pl_DataFrame, pl_Series
 from utilsforecast.validation import validate_freq
 from neuralforecast import NeuralForecast
@@ -14,7 +13,10 @@ from neuralforecast.losses.pytorch import IQLoss, HuberIQLoss
 
 
 class NeuralForecast2(NeuralForecast):
-    def __init__(self, *args, train_uids, **kwargs):
+    # A version of NeuralForecast where models are fit on a subset of df
+    # that contains only the unique_ids from train_uids
+
+    def __init__(self, train_uids: np.ndarray, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.train_uids = train_uids
 

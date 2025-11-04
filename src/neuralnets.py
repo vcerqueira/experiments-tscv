@@ -146,19 +146,6 @@ class ModelsConfig:
         return scores
 
     @classmethod
-    def get_best_configs(cls, nf: Union[NeuralForecast, List]) -> List:
-        if isinstance(nf, List):
-            return cls._get_best_configs_from_folds(nf)
-
-        optim_models = []
-        for mod in nf.models:
-            opm_mod = cls.MODEL_CLASSES[mod.alias](**mod.results.get_best_result().config)
-
-            optim_models.append(opm_mod)
-
-        return optim_models
-
-    @classmethod
     def _get_best_configs_from_folds(cls, fold_scores: List) -> List:
         folds_fl = [item for sublist in fold_scores for item in sublist]
 
@@ -174,6 +161,19 @@ class ModelsConfig:
             config = config_inst.iloc[0]['config']
 
             opm_mod = cls.MODEL_CLASSES[row['model']](**config)
+
+            optim_models.append(opm_mod)
+
+        return optim_models
+
+    @classmethod
+    def get_best_configs(cls, nf: Union[NeuralForecast, List]) -> List:
+        if isinstance(nf, List):
+            return cls._get_best_configs_from_folds(nf)
+
+        optim_models = []
+        for mod in nf.models:
+            opm_mod = cls.MODEL_CLASSES[mod.alias](**mod.results.get_best_result().config)
 
             optim_models.append(opm_mod)
 

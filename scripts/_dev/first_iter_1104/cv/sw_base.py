@@ -1,5 +1,6 @@
 from abc import ABC
 
+import numpy as np
 import pandas as pd
 from sklearn.model_selection._split import BaseCrossValidator
 
@@ -32,5 +33,21 @@ class SeriesWiseTimeSeriesCV(BaseCrossValidator, ABC):
 
         train_df = pd.concat(train_l).reset_index(drop=True)
         test_df = pd.concat(test_l).reset_index(drop=True)
+
+        return train_df, test_df
+
+    def get_sets_from_idx(self, df: pd.DataFrame, uids: np.ndarray, train_idx: np.ndarray, test_idx: np.ndarray):
+        train_uids, test_uids = uids[train_idx], uids[test_idx]
+
+        # reflect repetitions in train_idx (for bootstrapping)
+        train_df = pd.concat(
+            [df[df[self.id_col] == uid] for uid in train_uids],
+            ignore_index=True
+        )
+
+        test_df = pd.concat(
+            [df[df[self.id_col] == uid] for uid in test_uids],
+            ignore_index=True
+        )
 
         return train_df, test_df

@@ -15,14 +15,13 @@ from src.neuralnets import ModelsConfig
 from src.config import N_SAMPLES, SEED, LIMIT_EPOCHS, TRY_MPS
 from src.cv import CV_METHODS, CV_METHODS_PARAMS
 from src.cv.tw_holdout import time_wise_holdout
-from src.neuralforecast_ext import NeuralForecast2
 
 warnings.filterwarnings('ignore')
 
 os.environ['TUNE_DISABLE_STRICT_METRIC_CHECKING'] = '1'
 
 # ---- data loading and partitioning
-GROUP_IDX = 0
+GROUP_IDX = 1
 data_name, group = DATA_GROUPS[GROUP_IDX]
 print(data_name, group)
 data_loader = DATASETS[data_name]
@@ -38,12 +37,11 @@ df, h, _, freq_str, freq_i = data_loader.load_everything(group)
 # -- estimation_train is used for inner cv and final training
 # ----- the data we use to get performance estimations
 # -- estimation_test is only used at the end to see how well our estimation worked
-est_train, est_test = data_loader.time_wise_split(df, horizon=h * 3)
+est_train, est_test = data_loader.time_wise_split(df, horizon=h)
 
 
 def run_cross_validation(estimation_train: pd.DataFrame,
                          estimation_test: pd.DataFrame,
-                         complete_df: pd.DataFrame,
                          cv_method: str,
                          nf_models: List,
                          horizon: int,
@@ -59,38 +57,40 @@ def run_cross_validation(estimation_train: pd.DataFrame,
         print(f"Fold {j}:")
         print(f"  Train: index={train_index}")
         print(f"  Test:  index={test_index}")
-        train_uids, test_uids = uids[train_index], uids[test_index]
 
         models_ = copy.deepcopy(nf_models)
-        nf = NeuralForecast2(models=models_, freq=freq, train_uids=train_uids)
+        nf = NeuralForecast(models=models_, freq=freq)
+
+        fold_train, fold_test = cv.get_sets_from_idx(df=estimation_train,
+                                                     uids=uids,
+                                                     train_idx=train_index,
+                                                     test_idx=test_index)
+
+        f_train_in, _ = cv.time_wise_split(fold_train, horizon=horizon)
+        f_test_in, f_test_out = cv.time_wise_split(fold_test, horizon=horizon)
+
         np.random.seed(random_state)
-        cv_nf = nf.cross_validation(df=estimation_train,
-                                    val_size=horizon,
-                                    test_size=None,
-                                    step_size=1,
-                                    n_windows=horizon)
+        nf.fit(df=f_train_in, val_size=horizon)
+        fcst_outsample = nf.predict(df=f_test_in)
+
+        fold_cv = fcst_outsample.merge(f_test_out, on=['ds', 'unique_id'], how='right')
 
         sf_inner = StatsForecast(
             models=[SeasonalNaive(season_length=freq_int)],
             freq=freq_str,
             n_jobs=1)
 
-        cv_sf = sf_inner.cross_validation(df=estimation_train,
-                                          test_size=None,
-                                          step_size=1,
-                                          n_windows=horizon,
-                                          h=horizon)
+        sf_inner.fit(df=f_test_in)
+        fcst_cv_sf = sf_inner.predict(h=horizon)
 
-        cv = cv_nf.merge(cv_sf.drop(columns=['y']), on=['ds', 'unique_id', 'cutoff'])
-        cv = cv[cv['unique_id'].isin(test_uids)]
+        fold_cv = fcst_cv_sf.merge(fold_cv, on=['ds', 'unique_id'], how='right')
 
         config_scores = ModelsConfig.get_all_config_results(nf)
         cv_folds_config_scores.append(config_scores)
 
         # assuming we're aggregating by series, not by fold. we can test this later
-        # cv['fold'] = j
-
-        cv_results.append(cv)
+        fold_cv['fold'] = j
+        cv_results.append(fold_cv)
 
     cv_inner = pd.concat(cv_results)
 
@@ -98,30 +98,25 @@ def run_cross_validation(estimation_train: pd.DataFrame,
     optim_models = ModelsConfig.get_best_configs(cv_folds_config_scores)
 
     nf_final = NeuralForecast(models=optim_models, freq=freq_str)
-    cv_nf_f = nf_final.cross_validation(df=complete_df,
-                                        val_size=horizon,
-                                        test_size=horizon * 3,
-                                        step_size=1,
-                                        n_windows=None)
+    nf_final.fit(df=estimation_train, val_size=horizon)
+    fcst = nf_final.predict(df=estimation_train)
 
-    # cv = fcst.merge(estimation_test, on=['ds', 'unique_id'], how='right')
+    cv = fcst.merge(estimation_test, on=['ds', 'unique_id'], how='right')
 
     sf = StatsForecast(
         models=[SeasonalNaive(season_length=freq_int)],
         freq=freq_str,
         n_jobs=1)
 
-    cv_sf_f = sf.cross_validation(df=complete_df,
-                                  h=horizon,
-                                  test_size=horizon * 3,
-                                  step_size=1,
-                                  n_windows=None)
+    sf.fit(df=estimation_train)
+    fcst_sf = sf.predict(h=horizon)
 
-    cv_outer = cv_nf_f.merge(cv_sf_f.drop(columns=['y']), on=['ds', 'unique_id', 'cutoff'])
+    cv = fcst_sf.merge(cv, on=['ds', 'unique_id'], how='right')
 
-    return cv_outer, cv_inner
+    return cv, cv_inner
 
 
+# are the naming of uids ok for bootstrap? because of repeats
 
 if __name__ == '__main__':
 
@@ -133,7 +128,6 @@ if __name__ == '__main__':
     print(f"Running cross validation for method: Time-wise Holdout")
     tw_cv, tw_cv_inner = time_wise_holdout(train=est_train,
                                            test=est_test,
-                                           complete_df=df,
                                            freq=freq_str,
                                            freq_int=freq_i,
                                            horizon=h,
@@ -147,7 +141,6 @@ if __name__ == '__main__':
         cv_result, cv_inner_result = run_cross_validation(cv_method=method_name,
                                                           estimation_train=est_train,
                                                           estimation_test=est_test,
-                                                          complete_df=df,
                                                           freq=freq_str,
                                                           freq_int=freq_i,
                                                           horizon=h,

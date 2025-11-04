@@ -1,0 +1,48 @@
+# todo implement cv approaches
+- [x] time-wise holdout
+- [x] series-wise holdout
+- [x] series-wise repeated holdout
+- [x] series-wise k-fold cv
+- [x] series-wise repeated k-fold cv
+- [x] series-wise bootstrapping
+- [x] series-wise repeated bootstrapping
+- [x] series-wise monte carlo cv
+
+hypotheses:
+- series-wise (vertical+horizontal) splits will increase independence between training and testing sets during CV
+
+# todo learning methods
+- [x] auto models: configuration selected using the validation set
+    - configuration pool for RS is also fixed
+- [ ] pre-defined pool of models: easier to run
+
+# todo variants
+- [x] standard rolling origin
+- [ ] embargo
+- [x] aggregation per series instead of fold
+- [ ] aggregation per fold: not doing this, but it may be interesting to test
+- [ ] n_windows-based (3*h) cross-validation, as it should be more robust/stable.
+assuming CV should be an offline thing (not repeated too often during deployment), so a larger window should be better
+- [] one horizon window cross-validation: unsure about the stability of this
+
+
+# todo analysis variants
+- [ ] selection v estimation
+- [ ] sensitivity to sample size (number of series AND number of observations)
+- [ ] are we estimating the workflow (incl. HPO) or the final model (retrained OR not)?
+
+
+# todo analysis
+- [x] per dataset: dataset sample size issue (even with complete benchmarks probably)
+- [ ] per time series: disregarding potential dependencies among models and not so realistic
+(we're not selecting models per uid) but solves the dataset size issue
+
+
+# Notes
+- focused on neural networks trained for cross-learning
+
+# todo improvements
+- add more models
+- add more datasets
+- improve evaluation
+- solve repeated uid's bug
