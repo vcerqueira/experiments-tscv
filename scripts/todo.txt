@@ -30,6 +30,7 @@ assuming CV should be an offline thing (not repeated too often during deployment
 - [ ] selection v estimation
 - [ ] sensitivity to sample size (number of series AND number of observations)
 - [ ] are we estimating the workflow (incl. HPO) or the final model (retrained OR not)?
+very important consideration because the way we're doing creates different models for the estimation test set
 
 
 # todo analysis
