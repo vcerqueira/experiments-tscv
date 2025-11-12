@@ -1,17 +1,16 @@
 import copy
 
-import pandas as pd
 import numpy as np
 from neuralforecast import NeuralForecast
 from statsforecast import StatsForecast
 from statsforecast.models import SeasonalNaive
 
 from src.neuralnets import ModelsConfig
-from src.load_data.base import LoadDataset
+from src.chronos_data import ChronosDataset
 from src.config import SEED
 
 
-def time_wise_holdout(train, test, complete_df, models, freq, freq_int, horizon):
+def time_wise_holdout(train, test, models, freq, freq_int, horizon):
     # -- setup
     models_ = copy.deepcopy(models)
     nf = NeuralForecast(models=models_, freq=freq)
@@ -29,6 +28,9 @@ def time_wise_holdout(train, test, complete_df, models, freq, freq_int, horizon)
     optim_models = ModelsConfig.get_best_configs(nf)
 
     nf_final = NeuralForecast(models=optim_models, freq=freq)
+
+    complete_df = ChronosDataset.concat_time_wise_tr_ts(train, test)
+
     cv_nf_f = nf_final.cross_validation(df=complete_df,
                                         val_size=horizon,
                                         test_size=horizon * 3,
