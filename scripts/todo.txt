@@ -10,11 +10,13 @@
 
 hypotheses:
 - series-wise (vertical+horizontal) splits will increase independence between training and testing sets during CV
+- ... thus better performance estimates
+- series-wise cv encourages finding models that generalize across time and across the domain (within-domain adaptable)
 
 # todo learning methods
 - [x] auto models: configuration selected using the validation set
     - configuration pool for RS is also fixed
-- [ ] pre-defined pool of models: easier to run
+- [ ] pre-defined pool of models: easier to run, not as realistic
 
 # todo variants
 - [x] standard rolling origin
@@ -30,7 +32,6 @@ assuming CV should be an offline thing (not repeated too often during deployment
 - [ ] sensitivity to sample size (number of series AND number of observations)
 - [ ] are we estimating the workflow (incl. HPO) or the final model (retrained OR not)?
 very important consideration because the way we're doing creates different models for the estimation test set
-
 
 # todo analysis
 - [x] per dataset: dataset sample size issue (even with complete benchmarks probably)

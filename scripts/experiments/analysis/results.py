@@ -30,7 +30,8 @@ for method in cv_methods:
         continue
 
     cv_inner = pd.read_csv(inner_path)
-    cv_inner.rename(columns={col: col.replace('Auto', '', 1) for col in cv_inner.columns if col.startswith('Auto')},
+    cv_inner.rename(columns={col: col.replace('Auto', '', 1)
+                             for col in cv_inner.columns if col.startswith('Auto')},
                     inplace=True)
     cv_outer = pd.read_csv(outer_path)
 
