@@ -18,6 +18,7 @@ target = 'monash_tourism_monthly'
 df, horizon, _, freq, seas_len = ChronosDataset.load_everything(target)
 
 results_dir = Path('../../assets/results')
+print(results_dir.absolute())
 # results_dir = Path('./assets/results')
 results_dir.mkdir(parents=True, exist_ok=True)
 
