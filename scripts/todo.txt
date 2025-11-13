@@ -21,9 +21,8 @@ hypotheses:
 - [ ] embargo
 - [x] aggregation per series instead of fold
 - [ ] aggregation per fold: not doing this, but it may be interesting to test
-- [ ] n_windows-based (3*h) cross-validation, as it should be more robust/stable.
+- [x] testset is 3*h cross-validation, as it should be more robust/stable.
 assuming CV should be an offline thing (not repeated too often during deployment), so a larger window should be better
-- [] one horizon window cross-validation: unsure about the stability of this
 
 
 # todo analysis variants
@@ -46,4 +45,3 @@ very important consideration because the way we're doing creates different model
 - add more models
 - add more datasets
 - improve evaluation
-- solve repeated uid's bug
