@@ -10,9 +10,11 @@ from modelradar.evaluate.radar import ModelRadar
 from src.cv import CV_METHODS
 
 RESULTS_DIR = "assets/results"
-# DATASET = 'M4,Monthly'
-# DATASET = 'Tourism,Monthly'
-DATASET = 'M3,Monthly'
+DATASET = 'monash_m1_monthly'
+MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
+          'TiDE', 'NLinear', "MLP",
+          'DLinear', 'NHITS', 'DeepNPTS',
+          "SeasonalNaive"]
 
 rmae_sn = partial(rmae, baseline="SeasonalNaive")
 # rmae_sn = smape
@@ -35,10 +37,7 @@ for method in cv_methods:
     radar_outer = ModelRadar(
         cv_df=cv_outer,
         metrics=[rmae_sn],
-        model_names=["KAN", 'PatchTST', 'NBEATS',
-                     'TiDE', 'NLinear', "MLP",
-                     'DLinear', 'NHITS', 'DeepNPTS',
-                     "SeasonalNaive"],
+        model_names=MODELS,
         hardness_reference="SeasonalNaive",
         ratios_reference="SeasonalNaive",
     )
@@ -48,10 +47,7 @@ for method in cv_methods:
     radar_inner = ModelRadar(
         cv_df=cv_inner,
         metrics=[rmae_sn],
-        model_names=["KAN", 'PatchTST', 'NBEATS',
-                     'TiDE', 'NLinear', "MLP",
-                     'DLinear', 'NHITS', 'DeepNPTS',
-                     "SeasonalNaive"],
+        model_names=MODELS,
         hardness_reference="SeasonalNaive",
         ratios_reference="SeasonalNaive",
     )

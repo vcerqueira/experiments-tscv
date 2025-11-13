@@ -17,11 +17,20 @@ def time_wise_holdout(train, test, models, freq, freq_int, horizon):
     sf_inner = StatsForecast(models=[SeasonalNaive(season_length=freq_int)], freq=freq, n_jobs=1)
 
     # -- inner cv,
-    cv_params = {'val_size': horizon, 'test_size': None, 'n_windows': horizon, 'step_size': 1}
+    nf_inner_setup = {
+        'df': train, 'val_size': horizon,
+        'test_size': horizon, 'step_size': 1, 'n_windows': None,
+    }
+
+    sf_inner_setup = {
+        'df': train, 'test_size': horizon,
+        'step_size': 1, 'n_windows': None, 'h': horizon
+    }
+
     np.random.seed(SEED)
-    cv_inner = nf.cross_validation(df=train, **cv_params)
+    cv_inner = nf.cross_validation(**nf_inner_setup)
     cv_inner['fold'] = 0
-    cv_sf_inner = sf_inner.cross_validation(df=train, h=horizon, test_size=horizon, n_windows=None)
+    cv_sf_inner = sf_inner.cross_validation(**sf_inner_setup)
     cv_inner = cv_inner.merge(cv_sf_inner.drop(columns=['y', 'cutoff']), on=['ds', 'unique_id'], how='left')
 
     # -- cv "inference"
@@ -31,24 +40,21 @@ def time_wise_holdout(train, test, models, freq, freq_int, horizon):
 
     complete_df = ChronosDataset.concat_time_wise_tr_ts(train, test)
 
-    cv_nf_f = nf_final.cross_validation(df=complete_df,
-                                        val_size=horizon,
-                                        test_size=horizon * 3,
-                                        step_size=1,
-                                        n_windows=None)
+    nf_outer_setup = {
+        'df': complete_df, 'val_size': horizon,
+        'test_size': horizon * 3, 'step_size': 1, 'n_windows': None
+    }
 
-    # cv = fcst.merge(estimation_test, on=['ds', 'unique_id'], how='right')
+    sf_outer_setup = {
+        'df': complete_df, 'h': horizon,
+        'test_size': horizon * 3, 'step_size': 1, 'n_windows': None
+    }
 
-    sf = StatsForecast(
-        models=[SeasonalNaive(season_length=freq_int)],
-        freq=freq,
-        n_jobs=1)
+    cv_nf_f = nf_final.cross_validation(**nf_outer_setup)
 
-    cv_sf_f = sf.cross_validation(df=complete_df,
-                                  h=horizon,
-                                  test_size=horizon * 3,
-                                  step_size=1,
-                                  n_windows=None)
+    sf = StatsForecast(models=[SeasonalNaive(season_length=freq_int)], freq=freq)
+
+    cv_sf_f = sf.cross_validation(**sf_outer_setup)
 
     cv_outer = cv_nf_f.merge(cv_sf_f.drop(columns=['y']), on=['ds', 'unique_id', 'cutoff'])
 
