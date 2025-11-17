@@ -54,24 +54,24 @@ for method in cv_methods:
         ratios_reference="SeasonalNaive",
     )
 
-    err_inner = radar_inner.evaluate(keep_uids=False)
+    # err_inner = radar_inner.evaluate(keep_uids=False)
 
-    # cv_inner_g = cv_inner.groupby('fold')
-    # folds_res = []
-    # for g, fold_cv in cv_inner_g:
-    #
-    #     radar_inner_ = ModelRadar(
-    #         cv_df=fold_cv,
-    #         metrics=[rmae_sn],
-    #         model_names=["KAN", "MLP", 'DLinear', 'NHITS', 'DeepNPTS', "SeasonalNaive"],
-    #         hardness_reference="SeasonalNaive",
-    #         ratios_reference="SeasonalNaive",
-    #     )
-    #
-    #     g_err_inner = radar_inner_.evaluate(keep_uids=False)
-    #     folds_res.append(g_err_inner)
-    #
-    # err_inner = pd.DataFrame(folds_res).mean()
+    cv_inner_g = cv_inner.groupby('fold')
+    folds_res = []
+    for g, fold_cv in cv_inner_g:
+
+        radar_inner_ = ModelRadar(
+            cv_df=fold_cv,
+            metrics=[rmae_sn],
+            model_names=MODELS,
+            hardness_reference="SeasonalNaive",
+            ratios_reference="SeasonalNaive",
+        )
+
+        g_err_inner = radar_inner_.evaluate(keep_uids=False)
+        folds_res.append(g_err_inner)
+
+    err_inner = pd.DataFrame(folds_res).mean()
 
     selected_model = err_inner.idxmin()
     best_model = err_outer.idxmin()

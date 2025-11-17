@@ -10,9 +10,11 @@ from modelradar.evaluate.radar import ModelRadar
 from src.cv import CV_METHODS
 
 RESULTS_DIR = "assets/results"
-# DATASET = 'M3,Monthly'
-# DATASET = 'Tourism,Monthly'
-DATASET = 'M3,Monthly'
+DATASET = 'monash_m3_monthly'
+MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
+          'TiDE', 'NLinear', "MLP",
+          'DLinear', 'NHITS', 'DeepNPTS',
+          "SeasonalNaive"]
 
 rmae_sn = partial(rmae, baseline="SeasonalNaive")
 # rmae_sn = smape
@@ -21,6 +23,7 @@ cv_methods = ['TimeHoldout'] + [*CV_METHODS]
 
 cv_scores = []
 for method in cv_methods:
+    print(method)
     inner_path = os.path.join(RESULTS_DIR, f"{DATASET},{method},inner.csv")
     outer_path = os.path.join(RESULTS_DIR, f"{DATASET},{method},outer.csv")
 
@@ -35,36 +38,55 @@ for method in cv_methods:
     radar_inner = ModelRadar(
         cv_df=cv_inner,
         metrics=[rmae_sn],
-        # model_names=["KAN", "MLP", 'DLinear', 'NHITS', 'DeepNPTS'],
-        model_names=["KAN", 'PatchTST', 'NBEATS',
-                     'TiDE', 'NLinear', "MLP",
-                     'DLinear', 'NHITS', 'DeepNPTS',
-                     "SeasonalNaive"],
-        hardness_reference="MLP",
-        ratios_reference="MLP",
+        model_names=MODELS,
+        hardness_reference="SeasonalNaive",
+        ratios_reference="SeasonalNaive",
     )
 
     radar_outer = ModelRadar(
         cv_df=cv_outer,
         metrics=[rmae_sn],
-        # model_names=["KAN", "MLP", 'DLinear', 'NHITS', 'DeepNPTS'],
-        model_names=["KAN", 'PatchTST', 'NBEATS',
-                     'TiDE', 'NLinear', "MLP",
-                     'DLinear', 'NHITS', 'DeepNPTS',
-                     "SeasonalNaive"],
-        hardness_reference="MLP",
-        ratios_reference="MLP",
+        model_names=MODELS,
+        hardness_reference="SeasonalNaive",
+        ratios_reference="SeasonalNaive",
     )
 
     # todo se aggregar por uid, tenho de ter em conta repeticoes
     # ... basta iterar pelo err_inner, não? não, porque aqui já faltam dados. ja houve agg por uid
     err_inner = radar_inner.evaluate(keep_uids=True)
+
+
     # err_outer = radar_outer.evaluate(keep_uids=True)
-    err_outer = radar_outer.evaluate(keep_uids=True).loc[err_inner.index]
+
+    def base_uid(x):
+        parts = x.split('_')
+        if len(parts) > 1:
+            return '_'.join(parts[:-2])
+        else:
+            return x
+
+
+    if "fold" in err_inner.index[0]:
+        base_uid_list = err_inner.index.str.split('_').map(
+            lambda x: '_'.join(x[:-2]) if len(x) > 2 else err_inner.index[0])
+        err_inner_cln = err_inner.copy()
+        err_inner_cln.index = base_uid_list
+    else:
+        err_inner_cln = err_inner.copy()
+
+    err_outer = radar_outer.evaluate(keep_uids=True).loc[err_inner_cln.index]
+    err_outer = err_outer.groupby('unique_id').mean()
 
     scores_list = []
     for idx, row in err_outer.iterrows():
-        inner_row = err_inner.loc[idx]
+        # inner_row = err_inner.loc[idx]
+        try:
+            inner_row = err_inner_cln.loc[idx]
+            if len(inner_row.shape) > 1:
+                inner_row = inner_row.mean()
+        except KeyError:
+            continue
+
         selected_model = inner_row.idxmin()
         best_model = row.idxmin()
 
@@ -75,7 +97,6 @@ for method in cv_methods:
         regret = row[selected_model] - row[best_model]
         mae_best = np.abs(row[best_model] - inner_row[best_model]).mean()
         mae_sele = np.abs(row[selected_model] - inner_row[selected_model]).mean()
-
 
         scores_list.append({
             'method': method,
@@ -93,5 +114,4 @@ for method in cv_methods:
 
     cv_scores.append(sc)
 
-
-pd.DataFrame(cv_scores).round(3)
+print(pd.DataFrame(cv_scores).set_index('method').round(3))
