@@ -10,7 +10,7 @@ from modelradar.evaluate.radar import ModelRadar
 from src.cv import CV_METHODS
 
 RESULTS_DIR = "assets/results"
-DATASET = 'monash_m3_monthly'
+DATASET = 'monash_tourism_monthly'
 MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
           'TiDE', 'NLinear', "MLP",
           'DLinear', 'NHITS', 'DeepNPTS',
@@ -26,6 +26,8 @@ cv_methods = [*CV_METHODS] + ['TimeHoldout']
 
 cv_scores = []
 for method in cv_methods:
+    # if method in ["KFold",'RepeatedKFold']:
+    #     continue
     outer_path = os.path.join(RESULTS_DIR, f"{DATASET},{method},outer.csv")
 
     cv_outer = pd.read_csv(outer_path)

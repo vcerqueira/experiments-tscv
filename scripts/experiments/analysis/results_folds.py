@@ -10,7 +10,7 @@ from modelradar.evaluate.radar import ModelRadar
 from src.cv import CV_METHODS
 
 RESULTS_DIR = "assets/results"
-DATASET = 'monash_m3_monthly'
+DATASET = 'monash_tourism_monthly'
 MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
           'TiDE', 'NLinear', "MLP",
           'DLinear', 'NHITS', 'DeepNPTS',
