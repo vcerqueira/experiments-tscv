@@ -10,14 +10,14 @@ from modelradar.evaluate.radar import ModelRadar
 from src.cv import CV_METHODS
 
 RESULTS_DIR = "assets/results"
-DATASET = 'monash_tourism_monthly'
+DATASET = 'monash_m3_monthly'
 MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
           'TiDE', 'NLinear', "MLP",
           'DLinear', 'NHITS', 'DeepNPTS',
           "SeasonalNaive"]
 
-rmae_sn = partial(rmae, baseline="SeasonalNaive")
-# rmae_sn = smape
+# rmae_sn = partial(rmae, baseline="SeasonalNaive")
+rmae_sn = smape
 # rmae_sn = rmse
 
 cv_methods = [*CV_METHODS] + ['TimeHoldout']

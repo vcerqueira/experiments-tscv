@@ -16,9 +16,11 @@ MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
           'DLinear', 'NHITS', 'DeepNPTS',
           "SeasonalNaive"]
 
-rmae_sn = partial(rmae, baseline="SeasonalNaive")
-# rmae_sn = smape
+# rmae_sn = partial(rmae, baseline="SeasonalNaive")
+rmae_sn = mae
 # rmae_sn = rmse
+
+# todo calc mase using est_tr
 
 cv_methods = [*CV_METHODS] + ['TimeHoldout']
 
