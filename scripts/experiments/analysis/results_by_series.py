@@ -58,12 +58,12 @@ for method in cv_methods:
 
     # err_outer = radar_outer.evaluate(keep_uids=True)
 
-    def base_uid(x):
-        parts = x.split('_')
-        if len(parts) > 1:
-            return '_'.join(parts[:-2])
-        else:
-            return x
+    # def base_uid(x):
+    #     parts = x.split('_')
+    #     if len(parts) > 1:
+    #         return '_'.join(parts[:-2])
+    #     else:
+    #         return x
 
 
     if "fold" in err_inner.index[0]:
