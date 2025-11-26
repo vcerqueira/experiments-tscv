@@ -10,6 +10,7 @@ from src.chronos_data import ChronosDataset
 
 from src.cv import CV_METHODS
 from src.mase import mase_scaling_factor
+from src.utils import rename_uids
 
 RESULTS_DIR = "assets/results"
 DATASET = 'monash_m3_monthly'
@@ -17,21 +18,21 @@ MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
           'TiDE', 'NLinear', "MLP",
           'DLinear', 'NHITS', 'DeepNPTS',
           "SeasonalNaive"]
+FOLD_BASED_ERROR = False
 
 df, horizon, _, _, seas_len = ChronosDataset.load_everything(DATASET)
-est_train, _ = ChronosDataset.time_wise_split(df, horizon*5)
+est_train, _ = ChronosDataset.time_wise_split(df, horizon * 4)
 
 mase_sf = mase_scaling_factor(seasonality=seas_len, train_df=est_train)
 
 # rmae_sn = partial(rmae, baseline="SeasonalNaive")
-rmae_sn = mae
-# rmae_sn = rmse
 
 
 cv_methods = [*CV_METHODS] + ['TimeHoldout']
 
 cv_scores = []
 for method in cv_methods:
+    # method = 'Holdout'
 
     inner_path = os.path.join(RESULTS_DIR, f"{DATASET},{method},inner.csv")
     outer_path = os.path.join(RESULTS_DIR, f"{DATASET},{method},outer.csv")
@@ -47,47 +48,52 @@ for method in cv_methods:
 
     radar_outer = ModelRadar(
         cv_df=cv_outer,
-        metrics=[rmae_sn],
+        metrics=[mae],
         model_names=MODELS,
         hardness_reference="SeasonalNaive",
         ratios_reference="SeasonalNaive",
     )
 
-    err_outer = radar_outer.evaluate(keep_uids=False)
-    err_outer /= mase_sf.mean()
-    # err_outer_uids = radar_outer.evaluate(keep_uids=True)
-    # err_outer = err_outer_uids.div(mase_sf, axis=0).fillna(0).mean()
+    # err_outer = radar_outer.evaluate(keep_uids=False)
+    # err_outer /= mase_sf.mean()
+    err_outer_uids = radar_outer.evaluate(keep_uids=True)
+    err_outer = err_outer_uids.div(mase_sf, axis=0).fillna(0).mean()
+    err_outer = err_outer.drop('SeasonalNaive')
 
-    radar_inner = ModelRadar(
-        cv_df=cv_inner,
-        metrics=[rmae_sn],
-        model_names=MODELS,
-        hardness_reference="SeasonalNaive",
-        ratios_reference="SeasonalNaive",
-    )
+    if FOLD_BASED_ERROR:
+        cv_inner_g = cv_inner.groupby('fold')
+        folds_res = []
+        for g, fold_cv in cv_inner_g:
+            fold_radar_inner = ModelRadar(
+                cv_df=fold_cv,
+                metrics=[mae],
+                model_names=MODELS,
+                hardness_reference="SeasonalNaive",
+                ratios_reference="SeasonalNaive",
+            )
 
-    err_inner = radar_inner.evaluate(keep_uids=False)
-    err_inner /= mase_sf.mean()
+            f_err_inner_uids = fold_radar_inner.evaluate(keep_uids=True)
+            f_err_inner_uids = rename_uids(f_err_inner_uids)
+            f_err_inner = f_err_inner_uids.div(mase_sf, axis=0).fillna(0).mean()
+            f_err_inner = f_err_inner.drop('SeasonalNaive')
+            folds_res.append(f_err_inner)
 
-    # err_inner_uids = radar_inner.evaluate(keep_uids=True)
-    # err_inner = err_inner_uids.div(mase_sf, axis=0).fillna(0).mean()
+        err_inner = pd.DataFrame(folds_res).mean()
+    else:
+        radar_inner = ModelRadar(
+            cv_df=cv_inner,
+            metrics=[mae],
+            model_names=MODELS,
+            hardness_reference="SeasonalNaive",
+            ratios_reference="SeasonalNaive",
+        )
 
-    # cv_inner_g = cv_inner.groupby('fold')
-    # folds_res = []
-    # for g, fold_cv in cv_inner_g:
-    #
-    #     radar_inner_ = ModelRadar(
-    #         cv_df=fold_cv,
-    #         metrics=[rmae_sn],
-    #         model_names=["KAN", "MLP", 'DLinear', 'NHITS', 'DeepNPTS', "SeasonalNaive"],
-    #         hardness_reference="SeasonalNaive",
-    #         ratios_reference="SeasonalNaive",
-    #     )
-    #
-    #     g_err_inner = radar_inner_.evaluate(keep_uids=False)
-    #     folds_res.append(g_err_inner)
-    #
-    # err_inner = pd.DataFrame(folds_res).mean()
+        # err_inner = radar_inner.evaluate(keep_uids=False)
+        # err_inner /= mase_sf.mean()
+        err_inner_uids = radar_inner.evaluate(keep_uids=True)
+        err_inner_uids = rename_uids(err_inner_uids)
+        err_inner = err_inner_uids.div(mase_sf, axis=0).fillna(0).mean()
+        err_inner = err_inner.drop('SeasonalNaive')
 
     selected_model = err_inner.idxmin()
     best_model = err_outer.idxmin()
@@ -112,6 +118,6 @@ for method in cv_methods:
         }
     )
 
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', 10)
+pd.set_option('display.max_rows', 10)
 print(pd.DataFrame(cv_scores).round(3))
