@@ -4,28 +4,35 @@ from functools import partial
 import numpy as np
 import pandas as pd
 
-from utilsforecast.losses import smape, mape, mae, rmae, rmse, msse
+from utilsforecast.losses import smape, mape, mae, rmae, rmse, msse, mase
 from modelradar.evaluate.radar import ModelRadar
+from src.chronos_data import ChronosDataset
 
 from src.cv import CV_METHODS
+from src.mase import mase_scaling_factor
 
 RESULTS_DIR = "assets/results"
-DATASET = 'monash_tourism_monthly'
+DATASET = 'monash_m3_monthly'
 MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
           'TiDE', 'NLinear', "MLP",
           'DLinear', 'NHITS', 'DeepNPTS',
           "SeasonalNaive"]
 
+df, horizon, _, _, seas_len = ChronosDataset.load_everything(DATASET)
+est_train, _ = ChronosDataset.time_wise_split(df, horizon*5)
+
+mase_sf = mase_scaling_factor(seasonality=seas_len, train_df=est_train)
+
 # rmae_sn = partial(rmae, baseline="SeasonalNaive")
 rmae_sn = mae
 # rmae_sn = rmse
 
-# todo calc mase using est_tr
 
 cv_methods = [*CV_METHODS] + ['TimeHoldout']
 
 cv_scores = []
 for method in cv_methods:
+
     inner_path = os.path.join(RESULTS_DIR, f"{DATASET},{method},inner.csv")
     outer_path = os.path.join(RESULTS_DIR, f"{DATASET},{method},outer.csv")
 
@@ -47,6 +54,9 @@ for method in cv_methods:
     )
 
     err_outer = radar_outer.evaluate(keep_uids=False)
+    err_outer /= mase_sf.mean()
+    # err_outer_uids = radar_outer.evaluate(keep_uids=True)
+    # err_outer = err_outer_uids.div(mase_sf, axis=0).fillna(0).mean()
 
     radar_inner = ModelRadar(
         cv_df=cv_inner,
@@ -57,6 +67,10 @@ for method in cv_methods:
     )
 
     err_inner = radar_inner.evaluate(keep_uids=False)
+    err_inner /= mase_sf.mean()
+
+    # err_inner_uids = radar_inner.evaluate(keep_uids=True)
+    # err_inner = err_inner_uids.div(mase_sf, axis=0).fillna(0).mean()
 
     # cv_inner_g = cv_inner.groupby('fold')
     # folds_res = []
