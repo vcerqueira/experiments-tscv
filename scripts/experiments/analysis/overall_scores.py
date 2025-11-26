@@ -1,10 +1,8 @@
 import os
-from functools import partial
 
-import numpy as np
 import pandas as pd
 
-from utilsforecast.losses import smape, mape, mae, rmae, rmse, msse, mase
+from utilsforecast.losses import mae
 from modelradar.evaluate.radar import ModelRadar
 from src.chronos_data import ChronosDataset
 
@@ -24,9 +22,6 @@ df, horizon, _, _, seas_len = ChronosDataset.load_everything(DATASET)
 est_train, _ = ChronosDataset.time_wise_split(df, horizon * 4)
 
 mase_sf = mase_scaling_factor(seasonality=seas_len, train_df=est_train)
-
-# rmae_sn = partial(rmae, baseline="SeasonalNaive")
-
 
 cv_methods = [*CV_METHODS] + ['TimeHoldout']
 
@@ -74,7 +69,7 @@ for method in cv_methods:
 
             f_err_inner_uids = fold_radar_inner.evaluate(keep_uids=True)
             f_err_inner_uids = rename_uids(f_err_inner_uids)
-            f_err_inner = f_err_inner_uids.div(mase_sf, axis=0).fillna(0).mean()
+            f_err_inner = f_err_inner_uids.div(mase_sf, axis=0).mean()
             f_err_inner = f_err_inner.drop('SeasonalNaive')
             folds_res.append(f_err_inner)
 
@@ -92,7 +87,7 @@ for method in cv_methods:
         # err_inner /= mase_sf.mean()
         err_inner_uids = radar_inner.evaluate(keep_uids=True)
         err_inner_uids = rename_uids(err_inner_uids)
-        err_inner = err_inner_uids.div(mase_sf, axis=0).fillna(0).mean()
+        err_inner = err_inner_uids.div(mase_sf, axis=0).mean()
         err_inner = err_inner.drop('SeasonalNaive')
 
     selected_model = err_inner.idxmin()
@@ -100,6 +95,7 @@ for method in cv_methods:
 
     mae_all = (err_inner - err_outer).abs().mean()
     me_all = (err_inner - err_outer).mean()
+    perc_under = ((err_inner - err_outer) < 0).mean()
     # mean_sq_err = ((err_inner - err_outer) ** 2).mean()
     accuracy = int(selected_model == best_model)
     regret = err_outer[selected_model] - err_outer[best_model]
@@ -111,6 +107,7 @@ for method in cv_methods:
             'method': method,
             'mae_all': mae_all,
             'me_all': me_all,
+            'perc_under': perc_under,
             'mae_best': mae_best,
             'mae_sele': mae_sele,
             'accuracy': accuracy,
