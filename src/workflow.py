@@ -22,8 +22,7 @@ def run_cross_validation(in_set: pd.DataFrame,
                          freq: str,
                          freq_int: int,
                          random_state: int,
-                         out_set_multiplier: int) -> Tuple[pd.DataFrame,pd.DataFrame]:
-
+                         out_set_multiplier: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
     cv = CV_METHODS[cv_method](**CV_METHODS_PARAMS[cv_method])
 
     uids = in_set['unique_id'].unique()
