@@ -1,30 +1,38 @@
 import copy
+from typing import List, Tuple
 
 import numpy as np
+import pandas as pd
 from neuralforecast import NeuralForecast
 from statsforecast import StatsForecast
 from statsforecast.models import SeasonalNaive
 
 from src.neuralnets import ModelsConfig
 from src.chronos_data import ChronosDataset
-from src.config import SEED
+from src.config import SEED, STEP_SIZE
 
 
-def time_wise_holdout(train, test, models, freq, freq_int, horizon):
+def time_wise_holdout(in_set: pd.DataFrame,
+                      out_set: pd.DataFrame,
+                      models: List,
+                      freq: str,
+                      freq_int: int,
+                      horizon: int,
+                      out_set_multiplier: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
     # -- setup
     models_ = copy.deepcopy(models)
     nf = NeuralForecast(models=models_, freq=freq)
-    sf_inner = StatsForecast(models=[SeasonalNaive(season_length=freq_int)], freq=freq, n_jobs=1)
+    sf_inner = StatsForecast(models=[SeasonalNaive(season_length=freq_int)], freq=freq)
 
     # -- inner cv,
     nf_inner_setup = {
-        'df': train, 'val_size': horizon,
-        'test_size': horizon, 'step_size': 1, 'n_windows': None,
+        'df': in_set, 'val_size': horizon,
+        'test_size': horizon, 'step_size': STEP_SIZE, 'n_windows': None,
     }
 
     sf_inner_setup = {
-        'df': train, 'test_size': horizon,
-        'step_size': 1, 'n_windows': None, 'h': horizon
+        'df': in_set, 'test_size': horizon,
+        'step_size': STEP_SIZE, 'n_windows': None, 'h': horizon
     }
 
     np.random.seed(SEED)
@@ -38,16 +46,18 @@ def time_wise_holdout(train, test, models, freq, freq_int, horizon):
 
     nf_final = NeuralForecast(models=optim_models, freq=freq)
 
-    complete_df = ChronosDataset.concat_time_wise_tr_ts(train, test)
+    complete_df = ChronosDataset.concat_time_wise_tr_ts(in_set, out_set)
 
     nf_outer_setup = {
         'df': complete_df, 'val_size': horizon,
-        'test_size': horizon * 3, 'step_size': 1, 'n_windows': None
+        'test_size': horizon * out_set_multiplier,
+        'step_size': STEP_SIZE, 'n_windows': None
     }
 
     sf_outer_setup = {
         'df': complete_df, 'h': horizon,
-        'test_size': horizon * 3, 'step_size': 1, 'n_windows': None
+        'test_size': horizon * out_set_multiplier,
+        'step_size': STEP_SIZE, 'n_windows': None
     }
 
     cv_nf_f = nf_final.cross_validation(**nf_outer_setup)

@@ -15,6 +15,7 @@ from neuralforecast.losses.pytorch import IQLoss, HuberIQLoss
 class NeuralForecast2(NeuralForecast):
     # A version of NeuralForecast where models are fit on a subset of df
     # that contains only the unique_ids from train_uids
+    # testing uids are controlled outside this pipeline
 
     def __init__(self, train_uids: np.ndarray, *args, **kwargs):
         super().__init__(*args, **kwargs)

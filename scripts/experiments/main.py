@@ -3,11 +3,11 @@ import warnings
 from pathlib import Path
 
 from src.neuralnets import ModelsConfig
-from src.config import N_SAMPLES, SEED, LIMIT_EPOCHS, TRY_MPS
 from src.cv import CV_METHODS
 from src.cv.tw_holdout import time_wise_holdout
 from src.chronos_data import ChronosDataset
 from src.workflow import run_cross_validation
+from src.config import N_SAMPLES, SEED, LIMIT_EPOCHS, TRY_MPS, OUT_SET_MULTIPLIER
 
 warnings.filterwarnings('ignore')
 
@@ -24,7 +24,7 @@ results_dir = Path('../assets/results')
 # -- estimation_train is used for inner cv and final training
 # ----- the data we use to get performance estimations
 # -- estimation_test is only used at the end to see how well our estimation worked
-est_train, est_test = ChronosDataset.time_wise_split(df, horizon)
+in_set, out_set = ChronosDataset.time_wise_split(df, horizon * OUT_SET_MULTIPLIER)
 
 if __name__ == '__main__':
 
@@ -34,12 +34,13 @@ if __name__ == '__main__':
                                              n_samples=N_SAMPLES)
 
     print(f"Running cross validation for method: Time-wise Holdout")
-    tw_cv, tw_cv_inner = time_wise_holdout(train=est_train,
-                                           test=est_test,
+    tw_cv, tw_cv_inner = time_wise_holdout(in_set=in_set,
+                                           out_set=out_set,
                                            freq=freq,
                                            freq_int=seas_len,
                                            horizon=horizon,
-                                           models=models)
+                                           models=models,
+                                           out_set_multiplier=OUT_SET_MULTIPLIER)
 
     tw_cv.to_csv(results_dir / f'{target},TimeHoldout,outer.csv', index=False)
     tw_cv_inner.to_csv(results_dir / f'{target},TimeHoldout,inner.csv', index=False)
@@ -47,13 +48,14 @@ if __name__ == '__main__':
     for method_name in CV_METHODS:
         print(f"Running cross validation for method: {method_name}")
         cv_result, cv_inner_result = run_cross_validation(cv_method=method_name,
-                                                          estimation_train=est_train,
-                                                          estimation_test=est_test,
+                                                          in_set=in_set,
+                                                          out_set=out_set,
                                                           freq=freq,
                                                           freq_int=seas_len,
                                                           horizon=horizon,
                                                           nf_models=models,
-                                                          random_state=SEED)
+                                                          random_state=SEED,
+                                                          out_set_multiplier=OUT_SET_MULTIPLIER)
 
         cv_result.to_csv(results_dir / f'{target},{method_name},outer.csv', index=False)
         cv_inner_result.to_csv(results_dir / f'{target},{method_name},inner.csv', index=False)
