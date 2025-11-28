@@ -9,9 +9,10 @@ from src.chronos_data import ChronosDataset
 from src.cv import CV_METHODS
 from src.mase import mase_scaling_factor
 from src.utils import rename_uids
+from src.config import OUT_SET_MULTIPLIER
 
 RESULTS_DIR = "assets/results"
-DATASET = 'monash_m3_monthly'
+DATASET = 'monash_tourism_monthly'
 MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
           'TiDE', 'NLinear', "MLP",
           'DLinear', 'NHITS', 'DeepNPTS',
@@ -19,9 +20,10 @@ MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
 FOLD_BASED_ERROR = False
 
 df, horizon, _, _, seas_len = ChronosDataset.load_everything(DATASET)
-est_train, _ = ChronosDataset.time_wise_split(df, horizon * 4)
+in_set, _ = ChronosDataset.time_wise_split(df, horizon * OUT_SET_MULTIPLIER)
 
-mase_sf = mase_scaling_factor(seasonality=seas_len, train_df=est_train)
+mase_sf = mase_scaling_factor(seasonality=seas_len, train_df=in_set)
+# mase_sf = mase_scaling_factor(seasonality=1, train_df=in_set)
 
 cv_methods = [*CV_METHODS] + ['TimeHoldout']
 
@@ -52,7 +54,7 @@ for method in cv_methods:
     # err_outer = radar_outer.evaluate(keep_uids=False)
     # err_outer /= mase_sf.mean()
     err_outer_uids = radar_outer.evaluate(keep_uids=True)
-    err_outer = err_outer_uids.div(mase_sf, axis=0).fillna(0).mean()
+    err_outer = err_outer_uids.div(mase_sf, axis=0).mean()
     err_outer = err_outer.drop('SeasonalNaive')
 
     if FOLD_BASED_ERROR:
@@ -87,7 +89,7 @@ for method in cv_methods:
         # err_inner /= mase_sf.mean()
         err_inner_uids = radar_inner.evaluate(keep_uids=True)
         err_inner_uids = rename_uids(err_inner_uids)
-        err_inner = err_inner_uids.div(mase_sf, axis=0).mean()
+        err_inner = err_inner_uids.div(mase_sf.loc[err_inner_uids.index], axis=0).mean()
         err_inner = err_inner.drop('SeasonalNaive')
 
     selected_model = err_inner.idxmin()
