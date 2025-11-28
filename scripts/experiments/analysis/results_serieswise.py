@@ -1,3 +1,7 @@
+"""
+This one is more exploratory -
+meaning, unrealistic in the sense that we do not select series-wise
+"""
 import os
 
 import pandas as pd

@@ -1,3 +1,6 @@
+"""
+This one is more exploratory - meaning, independent of selection
+"""
 import os
 
 import pandas as pd
@@ -22,12 +25,8 @@ mase_sf = mase_scaling_factor(seasonality=seas_len, train_df=in_set)
 
 cv_methods = [*CV_METHODS] + ['TimeHoldout']
 
-# todo can do the analysis model by model
-
 cv_scores = []
 for method in cv_methods:
-    # if method in ["KFold",'RepeatedKFold']:
-    #     continue
     outer_path = os.path.join(RESULTS_DIR, f"{DATASET},{method},outer.csv")
 
     cv_outer = pd.read_csv(outer_path)
@@ -44,16 +43,10 @@ for method in cv_methods:
     err_outer = err_outer_uids.div(mase_sf, axis=0).mean()
     err_outer = err_outer.drop('SeasonalNaive')
 
-    best_model = err_outer.idxmin()
-
-    scr = {
-        'method': method,
-        'best_model': best_model,
-        **err_outer
-    }
+    scr = {'method': method, **err_outer}
 
     cv_scores.append(scr)
 
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
-print(pd.DataFrame(cv_scores).round(3))
+cv_df = pd.DataFrame(cv_scores).set_index('method')
+print('avg rank')
+print(cv_df.rank().mean(axis=1))
