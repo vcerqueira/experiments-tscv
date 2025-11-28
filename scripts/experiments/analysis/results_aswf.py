@@ -11,7 +11,7 @@ from src.cv import CV_METHODS
 from src.utils import rename_uids
 
 RESULTS_DIR = "assets/results"
-DATASET = 'monash_tourism_monthly'
+DATASET = 'monash_m3_monthly'
 MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
           'TiDE', 'NLinear', "MLP",
           'DLinear', 'NHITS', 'DeepNPTS',
@@ -101,4 +101,17 @@ for method in cv_methods:
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
-print(pd.DataFrame(cv_scores).round(3))
+
+cv_df = pd.DataFrame(cv_scores).set_index('method')
+
+print(cv_df.round(3))
+
+best_scr = cv_df['best_error'].min()
+
+regret = cv_df['selected_error'] - best_scr
+print('regret')
+print(regret)
+print(regret.rank())
+
+# print('rank')
+# print(cv_df['selected_error'].rank())
