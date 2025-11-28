@@ -1,12 +1,12 @@
 import os
-from functools import partial
 
-import numpy as np
 import pandas as pd
-
-from utilsforecast.losses import smape, mape, mae, rmae, rmse, msse
 from modelradar.evaluate.radar import ModelRadar
 
+from utilsforecast.losses import mae
+from src.chronos_data import ChronosDataset
+from src.mase import mase_scaling_factor
+from src.config import OUT_SET_MULTIPLIER
 from src.cv import CV_METHODS
 
 RESULTS_DIR = "assets/results"
@@ -16,9 +16,9 @@ MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
           'DLinear', 'NHITS', 'DeepNPTS',
           "SeasonalNaive"]
 
-# rmae_sn = partial(rmae, baseline="SeasonalNaive")
-rmae_sn = smape
-# rmae_sn = rmse
+df, horizon, _, _, seas_len = ChronosDataset.load_everything(DATASET)
+in_set, _ = ChronosDataset.time_wise_split(df, horizon * OUT_SET_MULTIPLIER)
+mase_sf = mase_scaling_factor(seasonality=seas_len, train_df=in_set)
 
 cv_methods = [*CV_METHODS] + ['TimeHoldout']
 
@@ -34,13 +34,15 @@ for method in cv_methods:
 
     radar_outer = ModelRadar(
         cv_df=cv_outer,
-        metrics=[rmae_sn],
+        metrics=[mae],
         model_names=MODELS,
         hardness_reference="SeasonalNaive",
         ratios_reference="SeasonalNaive",
     )
 
-    err_outer = radar_outer.evaluate(keep_uids=False)
+    err_outer_uids = radar_outer.evaluate(keep_uids=True)
+    err_outer = err_outer_uids.div(mase_sf, axis=0).mean()
+    err_outer = err_outer.drop('SeasonalNaive')
 
     best_model = err_outer.idxmin()
 
