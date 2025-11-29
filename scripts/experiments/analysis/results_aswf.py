@@ -109,7 +109,7 @@ print(cv_df.round(3))
 best_scr = cv_df['best_error'].min()
 
 regret = cv_df['selected_error'] - best_scr
-print('regret')
+print('outer regret')
 print(regret)
 print(regret.rank())
 
