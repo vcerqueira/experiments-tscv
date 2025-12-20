@@ -28,21 +28,20 @@ assuming CV should be an offline thing (not repeated too often during deployment
 
 
 # todo analysis variants
-- [ ] selection v estimation
+- [x] selection v estimation
 - [ ] sensitivity to sample size (number of series AND number of observations)
-- [ ] are we estimating the workflow (incl. HPO) or the final model (retrained OR not)?
+- [x] are we estimating the workflow (incl. HPO) or the final model (retrained OR not)?
 very important consideration because the way we're doing creates different models for the estimation test set
 
 # todo analysis
 - [x] per dataset: dataset sample size issue (even with complete benchmarks probably)
-- [ ] per time series: disregarding potential dependencies among models and not so realistic
+- [x] per time series: disregarding potential dependencies among models and not so realistic
 (we're not selecting models per uid) but solves the dataset size issue
-- [ ] per model -- Cv methods as workflows
+- [x] per model -- Cv methods as workflows
 
 # Notes
 - focused on neural networks trained for cross-learning
 
 # todo improvements
-- add more models
-- add more datasets
-- improve evaluation... include MASE
+- add more models: 10 is enough, no?
+- add more datasets-- those in typical benchmarks...
