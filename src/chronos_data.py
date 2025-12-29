@@ -16,7 +16,7 @@ class ChronosDataset:
 
     M4_HORIZON_MAP = {
         "Y": 6,
-        "Q": 8,
+        "Q": 4,
         "M": 18,
         "MS": 18,
         "ME": 18,
@@ -27,7 +27,7 @@ class ChronosDataset:
 
     HORIZON_MAP = {
         "Y": 6,
-        "Q": 8,
+        "Q": 4,
         "M": 12,
         "MS": 12,
         "ME": 12,
