@@ -39,7 +39,7 @@ class ChronosDataset:
     }
 
     SPECIAL_HORIZON_MAP = {
-        'monash_m1_monthly': 6,
+        'monash_m1_monthly': 6,  # time series are too short for 12 or 18
     }
 
     FREQUENCY_MAP = {
