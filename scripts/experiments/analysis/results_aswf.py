@@ -11,7 +11,7 @@ from src.cv import CV_METHODS
 from src.utils import rename_uids
 
 RESULTS_DIR = "assets/results"
-DATASET = 'monash_m3_monthly'
+DATASET = 'monash_tourism_quarterly'
 MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
           'TiDE', 'NLinear', "MLP",
           'DLinear', 'NHITS', 'DeepNPTS',
