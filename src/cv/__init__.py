@@ -13,7 +13,7 @@ CV_METHODS = {
     'Bootstrap': SeriesWiseBootstrap,
     'RepeatedBootstrap': SeriesWiseRepeatedBootstrap,
     'KFold': SeriesWiseKFold,
-    'RepeatedKFold': SeriesWiseRepeatedKFold,
+    # 'RepeatedKFold': SeriesWiseRepeatedKFold,
 }
 
 CV_METHODS_PARAMS = {
@@ -23,5 +23,5 @@ CV_METHODS_PARAMS = {
     'Bootstrap': {},
     'RepeatedBootstrap': {'n_repeats': N_FOLDS},
     'KFold': {'n_splits': N_FOLDS, 'random_state': SEED},
-    'RepeatedKFold': {'n_splits': N_FOLDS, 'n_repeats': KFOLD_N_REPEATS, 'random_state': SEED},
+    # 'RepeatedKFold': {'n_splits': N_FOLDS, 'n_repeats': KFOLD_N_REPEATS, 'random_state': SEED},
 }

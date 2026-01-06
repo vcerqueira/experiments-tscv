@@ -11,9 +11,8 @@ from src.mase import mase_scaling_factor
 from src.utils import rename_uids
 from src.config import OUT_SET_MULTIPLIER
 
-RESULTS_DIR = "assets/results2"
+RESULTS_DIR = "assets/results"
 
-# DATASET = 'monash_tourism_monthly'
 dataset_names = set(f.split(',')[0] for f in os.listdir(RESULTS_DIR))
 
 MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',

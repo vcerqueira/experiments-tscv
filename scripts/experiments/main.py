@@ -14,11 +14,11 @@ warnings.filterwarnings('ignore')
 os.environ['TUNE_DISABLE_STRICT_METRIC_CHECKING'] = '1'
 
 # ---- data loading and partitioning
-target = 'monash_m3_monthly'
+target = 'monash_m3_quarterly'
 df, horizon, _, freq, seas_len = ChronosDataset.load_everything(target)
 
-# results_dir = Path('./assets/results')
-results_dir = Path('../assets/results')
+results_dir = Path('./assets/results')
+# results_dir = Path('../assets/results')
 
 # - split dataset by time
 # -- estimation_train is used for inner cv and final training
@@ -27,6 +27,7 @@ results_dir = Path('../assets/results')
 in_set, out_set = ChronosDataset.time_wise_split(df, horizon * OUT_SET_MULTIPLIER)
 
 if __name__ == '__main__':
+    print(results_dir.absolute())
 
     models = ModelsConfig.get_auto_nf_models(horizon=horizon,
                                              try_mps=TRY_MPS,
