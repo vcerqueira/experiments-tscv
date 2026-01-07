@@ -122,4 +122,5 @@ cv_pivot_ext.loc['Avg. Rank'] = cv_pivot.rank(axis=1).mean()
 cv_pivot_ext.loc['Avg'] = cv_pivot.mean()
 
 print(cv_pivot_ext.round(3))
+
 print(cv_df.groupby('Method').mean(numeric_only=True))
