@@ -10,7 +10,7 @@ from src.config import OUT_SET_MULTIPLIER
 from src.cv import CV_METHODS
 from src.utils import rename_uids
 
-RESULTS_DIR = "assets/results2"
+RESULTS_DIR = "assets/results"
 
 dataset_names = set(f.split(',')[0] for f in os.listdir(RESULTS_DIR))
 

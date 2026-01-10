@@ -11,7 +11,7 @@ from src.mase import mase_scaling_factor
 from src.utils import rename_uids
 from src.config import OUT_SET_MULTIPLIER
 
-RESULTS_DIR = "assets/results2"
+RESULTS_DIR = "assets/results"
 
 dataset_names = set(f.split(',')[0] for f in os.listdir(RESULTS_DIR))
 
@@ -123,7 +123,7 @@ for ds in dataset_names:
         )
 
 pd.set_option('display.max_columns', 10)
-pd.set_option('display.max_rows', 10)
+pd.set_option('display.max_rows', 30)
 
 cv_df = pd.DataFrame(cv_scores)
 cv_df.groupby('Method').mean(numeric_only=True)
