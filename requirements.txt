@@ -6,3 +6,4 @@ python-dotenv==1.1.0
 scipy==1.15.3
 datasets==4.4.0
 modelradar==0.2.1
+statsforecast==2.0.3

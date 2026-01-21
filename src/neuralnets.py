@@ -41,16 +41,17 @@ from neuralforecast.models import (GRU,
 
 class ModelsConfig:
     AUTO_MODEL_CLASSES = {
+        'AutoNBEATS': AutoNBEATS,
+        'AutoTiDE': AutoTiDE,
+        'AutoNLinear': AutoNLinear,
+        'AutoTFT': AutoTFT,
         'AutoKAN': AutoKAN,
         'AutoMLP': AutoMLP,
         'AutoDLinear': AutoDLinear,
         'AutoNHITS': AutoNHITS,
         'AutoDeepNPTS': AutoDeepNPTS,
         'AutoPatchTST': AutoPatchTST,
-        'AutoNBEATS': AutoNBEATS,
-        'AutoTiDE': AutoTiDE,
-        'AutoNLinear': AutoNLinear,
-        'AutoTFT': AutoTFT,
+
         # 'AutoGRU': AutoGRU,
         # 'AutoDeepAR': AutoDeepAR,
         # 'AutoLSTM': AutoLSTM,
@@ -81,6 +82,8 @@ class ModelsConfig:
                 'AutoPatchTST',
                 'AutoDeepAR',
                 'AutoLSTM',
+                'AutoTiDE',
+                'AutoNLinear',
                 'AutoKAN',
                 'AutoDilatedRNN',
                 'AutoTCN']
@@ -135,13 +138,18 @@ class ModelsConfig:
                 sorted_string = json.dumps(conf_str, sort_keys=True)
                 hash_value = hashlib.md5(sorted_string.encode()).hexdigest()
 
-                scores.append({
-                    'model': mod.alias,
-                    'config_idx': i,
-                    'loss': res.metrics['loss'],
-                    'config': res.config,
-                    'hash_value': hash_value
-                })
+                try:
+                    scr = {
+                        'model': mod.alias,
+                        'config_idx': i,
+                        'loss': res.metrics['loss'],
+                        'config': res.config,
+                        'hash_value': hash_value
+                    }
+
+                    scores.append(scr)
+                except KeyError:
+                    continue
 
         return scores
 

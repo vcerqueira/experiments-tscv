@@ -6,12 +6,12 @@ HOLDOUT_TR = 0.7
 MC_TR = 0.5
 MC_TS = 0.2
 KFOLD_N_REPEATS = 2
-TRY_MPS = False
+TRY_MPS = True
 STEP_SIZE = 1
 OUT_SET_MULTIPLIER = 1
 if DRY_RUN:
     N_SAMPLES = 2
     LIMIT_EPOCHS = True
 else:
-    N_SAMPLES = 10
+    N_SAMPLES = 15
     LIMIT_EPOCHS = False
