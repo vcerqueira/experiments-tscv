@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore')
 os.environ['TUNE_DISABLE_STRICT_METRIC_CHECKING'] = '1'
 
 # ---- data loading and partitioning
-target = 'monash_m3_monthly'
+target = 'monash_tourism_monthly'
 df, horizon, _, freq, seas_len = ChronosDataset.load_everything(target)
 
 results_dir = Path('../../assets/results')
