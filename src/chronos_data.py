@@ -17,9 +17,9 @@ class ChronosDataset:
     M4_HORIZON_MAP = {
         "Y": 6,
         "Q": 4,
-        "M": 18,
-        "MS": 18,
-        "ME": 18,
+        "M": 12,
+        "MS": 12,
+        "ME": 12,
         "W": 13,
         "D": 14,
         "H": 48,
@@ -40,6 +40,7 @@ class ChronosDataset:
 
     SPECIAL_HORIZON_MAP = {
         'monash_m1_monthly': 6,  # time series are too short for 12 or 18
+        'monash_m1_quarterly': 2,  # time series are too short for 4
     }
 
     FREQUENCY_MAP = {
