@@ -14,8 +14,8 @@ warnings.filterwarnings('ignore')
 os.environ['TUNE_DISABLE_STRICT_METRIC_CHECKING'] = '1'
 
 # ---- data loading and partitioning
-target = 'monash_m1_quarterly'
-# target = 'm4_monthly'
+target = 'monash_m3_yearly'
+# target = 'm4_yearly'
 df, horizon, _, freq, seas_len = ChronosDataset.load_everything(target)
 # df['unique_id'].value_counts().value_counts().sort_index()
 
