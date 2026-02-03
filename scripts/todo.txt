@@ -45,3 +45,18 @@ very important consideration because the way we're doing creates different model
 # todo improvements
 - add more models: 10 is enough, no?
 - add more datasets-- those in typical benchmarks...
+
+
+# datasets missing
+[] m4 d
+[] m4 h
+[] m4 w
+[] m4 m
+[] m4 q
+[] ECL
+[] Exchange
+[] ETTm1
+[] Traffic
+[] weather
+
+
