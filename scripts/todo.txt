@@ -46,13 +46,7 @@ very important consideration because the way we're doing creates different model
 - add more models: 10 is enough, no?
 - add more datasets-- those in typical benchmarks...
 
-
-# datasets missing
-[] m4 d
-[] m4 h
-[] m4 w
-[] m4 m
-[] m4 q
+IMPLEMENT CLASS FOR RETRIEVIGN FROM DATASETSFORECAST
 [] ECL
 [] Exchange
 [] ETTm1

@@ -41,10 +41,10 @@ from neuralforecast.models import (GRU,
 
 class ModelsConfig:
     AUTO_MODEL_CLASSES = {
+        'AutoTFT': AutoTFT,
         'AutoNBEATS': AutoNBEATS,
         'AutoTiDE': AutoTiDE,
         'AutoNLinear': AutoNLinear,
-        'AutoTFT': AutoTFT,
         'AutoKAN': AutoKAN,
         'AutoMLP': AutoMLP,
         'AutoDLinear': AutoDLinear,
@@ -79,6 +79,7 @@ class ModelsConfig:
 
     NEED_CPU = ['AutoGRU',
                 'AutoDeepNPTS',
+                #'AutoTFT',
                 'AutoPatchTST',
                 'AutoDeepAR',
                 'AutoLSTM',
