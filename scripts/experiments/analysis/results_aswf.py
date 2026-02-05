@@ -4,7 +4,7 @@ import pandas as pd
 from modelradar.evaluate.radar import ModelRadar
 
 from utilsforecast.losses import mae
-from src.chronos_data import ChronosDataset
+from src.loaders import ChronosDataset, LongHorizonDatasetR
 from src.mase import mase_scaling_factor
 from src.config import OUT_SET_MULTIPLIER
 from src.cv import CV_METHODS
@@ -23,7 +23,11 @@ cv_scores = []
 for ds in dataset_names:
     print(ds)
 
-    df, horizon, _, _, seas_len = ChronosDataset.load_everything(ds)
+    if ds in [*LongHorizonDatasetR.FREQUENCY_MAP]:
+        df, horizon, _, _, seas_len = LongHorizonDatasetR.load_everything(ds)
+    else:
+        df, horizon, _, _, seas_len = ChronosDataset.load_everything(ds)
+
     in_set, _ = ChronosDataset.time_wise_split(df, horizon * OUT_SET_MULTIPLIER)
     mase_sf = mase_scaling_factor(seasonality=seas_len, train_df=in_set)
 
