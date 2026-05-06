@@ -23,6 +23,7 @@ MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
           "SeasonalNaive"]
 
 cv_scores = []
+all_cv_scores = []
 for ds in dataset_names:
     print(ds)
 
@@ -109,8 +110,9 @@ for ds in dataset_names:
         selected_model = err_inner.idxmin()
         best_model = err_outer.idxmin()
 
-        mae_all = (err_inner - err_outer).abs().mean()
-        me_all = (err_inner - err_outer).mean()
+        mae_all = (err_inner - err_outer).abs()
+        mae_avg = mae_all.mean()
+        me_all = (err_inner - err_outer)
         perc_under = ((err_inner - err_outer) < 0).mean()
         accuracy = int(selected_model == best_model)
         regret = err_outer[selected_model] - err_outer[best_model]
@@ -121,26 +123,32 @@ for ds in dataset_names:
             {
                 'Dataset': ds,
                 'Method': method,
-                'MAPEE': mae_all,
-                'MPEE' : me_all,
+                'MAPEE': mae_avg,
                 'Accuracy': accuracy,
                 'Regret': regret,
             }
         )
 
+        for m in MODELS[:-1]:
+            all_cv_scores.append(
+                {
+                    'Dataset': ds,
+                    'Method': method,
+                    'Model' : m,
+                    'MAPEE': mae_all[m],
+                    'MPEE' : me_all[m],
+                }
+            )
+
 # pd.set_option('display.max_columns', 10)
 # pd.set_option('display.max_rows', 30)
 
 cv_df = pd.DataFrame(cv_scores)
+all_cv_df = pd.DataFrame(all_cv_scores)
 cv_df.groupby('Method').mean(numeric_only=True)
 
 cv_df_summ = cv_df.groupby('Method').mean(numeric_only=True).round(3)
-# Percentage of datasets for which performance is under-estimated
-cv_df_summ["Perc. underestimates"] = cv_df.groupby('Method')['MPEE'].apply(lambda x: 100*((x < 0).mean()).round(2))
-# Average magnitude of under-estimation error
-cv_df_summ["Avg. under-estimate"] = cv_df.groupby('Method')['MPEE'].apply(lambda x: (x[x<0]).mean().round(3))
-# Average magnitude of over-estimation error
-cv_df_summ["Avg. over-estimate"] = cv_df.groupby('Method')['MPEE'].apply(lambda x: (x[x>0]).mean().round(3))
+cv_df_summ = pd.merge(cv_df_summ.reset_index(), all_cv_df.groupby('Method')['MPEE'].apply(lambda x: ((x < 0).mean()).round(3)).reset_index(name='Overoptimism'))
 cv_df_summ = cv_df_summ.rename(index=METHOD_NAME_MAPPING)
-print(cv_df_summ.drop("MPEE", axis = 1))
-print(to_latex_tab(cv_df_summ.drop("MPEE", axis = 1).T, round_to_n=3, rotate_cols=False))
+print(cv_df_summ)
+print(to_latex_tab(cv_df_summ.T, round_to_n=3, rotate_cols=False))
