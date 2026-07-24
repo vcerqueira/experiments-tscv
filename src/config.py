@@ -1,4 +1,4 @@
-DRY_RUN = False
+DRY_RUN = True
 
 N_FOLDS = 5
 SEED = 123
@@ -7,14 +7,16 @@ MC_TR = 0.5
 MC_TS = 0.2
 KFOLD_N_REPEATS = 2
 FOLD_BASED_ERROR = False
-TRY_MPS = True
+USE_MPS = True
+USE_CUDA = False
+ENGINE = 'mps' if USE_MPS else ('gpu' if USE_CUDA else 'cpu')
 STEP_SIZE = 1
 OUT_SET_MULTIPLIER = 2
 if DRY_RUN:
     N_SAMPLES = 2
     LIMIT_EPOCHS = True
 else:
-    N_SAMPLES = 10
+    N_SAMPLES = 30
     LIMIT_EPOCHS = False
 
 HOLDOUT_FOR_OUTSET = 0

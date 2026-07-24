@@ -23,14 +23,15 @@ def run_cross_validation(in_set: pd.DataFrame,
                          freq_int: int,
                          random_state: int,
                          out_set_multiplier: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    cv = CV_METHODS[cv_method](**CV_METHODS_PARAMS[cv_method])
+    cv_instance = CV_METHODS[cv_method](**CV_METHODS_PARAMS[cv_method])
 
     aliases = [mod.alias for mod in nf_models]
 
     uids = in_set['unique_id'].unique()
+    splits = list(cv_instance.split(uids))  # Materialize splits before loop to avoid RNG interference
 
     cv_results = []
-    for j, (train_index, test_index) in enumerate(cv.split(uids)):
+    for j, (train_index, test_index) in enumerate(splits):
         print(f"Fold {j}:")
         print(f"  Train: index={train_index}")
         print(f"  Test:  index={test_index}")

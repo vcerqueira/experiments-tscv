@@ -10,7 +10,7 @@ from src.workflow_nestedcv import run_cross_validation
 from src.config import (N_SAMPLES,
                         SEED,
                         LIMIT_EPOCHS,
-                        TRY_MPS,
+                        ENGINE,
                         OUT_SET_MULTIPLIER,
                         HOLDOUT_FOR_OUTSET)
 
@@ -38,13 +38,14 @@ else:
     path_ = RESULTS_PATH.format('')
     in_set = in_set_all.copy()
 
-results_dir = Path(path_)
+results_dir = Path(path_) / f'seed_{SEED}'
 
 if __name__ == '__main__':
+    results_dir.mkdir(parents=True, exist_ok=True)
     print(results_dir.absolute())
 
     models = ModelsConfig.get_auto_nf_models(horizon=horizon,
-                                             try_mps=TRY_MPS,
+                                             engine=ENGINE,
                                              limit_epochs=LIMIT_EPOCHS,
                                              n_samples=N_SAMPLES)
 

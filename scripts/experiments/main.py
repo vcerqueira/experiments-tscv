@@ -7,7 +7,7 @@ from src.cv import CV_METHODS
 from src.cv.tw_holdout import time_wise_holdout
 from src.loaders import ChronosDataset, LongHorizonDatasetR
 from src.workflow import run_cross_validation
-from src.config import N_SAMPLES, SEED, LIMIT_EPOCHS, TRY_MPS, OUT_SET_MULTIPLIER
+from src.config import N_SAMPLES, SEED, LIMIT_EPOCHS, ENGINE, OUT_SET_MULTIPLIER
 
 warnings.filterwarnings('ignore')
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     models = BaseModelsConfig.get_pseudo_auto_nf_models(horizon=horizon,
                                                         input_size=n_lags,
-                                                        try_mps=TRY_MPS,
+                                                        engine=ENGINE,
                                                         limit_epochs=LIMIT_EPOCHS,
                                                         n_samples=N_SAMPLES, )
 

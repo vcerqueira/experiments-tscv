@@ -69,7 +69,7 @@ class BaseModelsConfig:
                                   horizon: int,
                                   input_size: int,
                                   n_samples: int,
-                                  try_mps: bool = True,
+                                  engine: str = 'cpu',
                                   limit_epochs: bool = False,
                                   limit_val_batches: Optional[int] = None):
         """
@@ -86,14 +86,7 @@ class BaseModelsConfig:
 
         models = []
         for mod_name, mod in cls.AUTO_MODEL_CLASSES.items():
-
-            if try_mps:
-                if mod_name in cls.NEED_CPU:
-                    mod.default_config['accelerator'] = 'cpu'
-                else:
-                    mod.default_config['accelerator'] = 'mps'
-            else:
-                mod.default_config['accelerator'] = 'cpu'
+            mod.default_config['accelerator'] = engine
 
             if limit_epochs:
                 # for basic tests

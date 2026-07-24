@@ -4,6 +4,8 @@ import json
 
 import numpy as np
 import pandas as pd
+import optuna
+from neuralforecast.common._base_auto import OptunaOptions
 from neuralforecast import NeuralForecast
 from neuralforecast.losses.pytorch import MAE
 from neuralforecast.auto import (AutoNBEATS,
@@ -81,19 +83,13 @@ class ModelsConfig:
     def get_auto_nf_models(cls,
                            horizon: int,
                            n_samples: int,
-                           try_mps: bool = True,
+                           engine: str = 'cpu',
                            limit_epochs: bool = False,
                            limit_val_batches: Optional[int] = None):
 
         models = []
         for mod_name, mod in cls.AUTO_MODEL_CLASSES.items():
-            if try_mps:
-                if mod_name in cls.NEED_CPU:
-                    mod.default_config['accelerator'] = 'cpu'
-                else:
-                    mod.default_config['accelerator'] = 'mps'
-            else:
-                mod.default_config['accelerator'] = 'cpu'
+            mod.default_config['accelerator'] = engine
 
             if limit_epochs:
                 mod.default_config['max_steps'] = 2
@@ -107,6 +103,11 @@ class ModelsConfig:
                 alias=mod_name,
                 valid_loss=MAE(),
                 refit_with_val=True,
+                backend= "optuna",
+                search_alg=optuna.samplers.RandomSampler(seed=42),
+                optuna_options=OptunaOptions(
+                    create_study_kwargs={"pruner": optuna.pruners.MedianPruner()}
+                ),
             )
 
             models.append(model_instance)
