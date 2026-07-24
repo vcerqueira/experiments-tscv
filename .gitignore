@@ -167,3 +167,6 @@ lightning_logs/
 scripts/_dev/
 assets/datasets
 assets/results_backup
+assets/results
+assets/results_holdout
+assets/results_ablation

@@ -1,7 +1,7 @@
 DRY_RUN = True
 
 N_FOLDS = 5
-SEED = 123
+SEED = 456
 HOLDOUT_TR = 0.7
 MC_TR = 0.5
 MC_TS = 0.2

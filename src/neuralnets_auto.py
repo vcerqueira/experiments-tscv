@@ -4,9 +4,9 @@ import json
 
 import numpy as np
 import pandas as pd
-import optuna
-from neuralforecast.common._base_auto import OptunaOptions
+from ray.tune.schedulers import MedianStoppingRule
 from neuralforecast import NeuralForecast
+from neuralforecast.common._base_auto import RayOptions
 from neuralforecast.losses.pytorch import MAE
 from neuralforecast.auto import (AutoNBEATS,
                                  AutoTiDE,
@@ -103,11 +103,8 @@ class ModelsConfig:
                 alias=mod_name,
                 valid_loss=MAE(),
                 refit_with_val=True,
-                backend= "optuna",
-                search_alg=optuna.samplers.RandomSampler(seed=42),
-                optuna_options=OptunaOptions(
-                    create_study_kwargs={"pruner": optuna.pruners.MedianPruner()}
-                ),
+                backend="ray",
+                ray_options=RayOptions(scheduler=MedianStoppingRule()),
             )
 
             models.append(model_instance)

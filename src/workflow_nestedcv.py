@@ -1,5 +1,5 @@
 import copy
-from typing import List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -23,8 +23,14 @@ def run_cross_validation(in_set: pd.DataFrame,
                          freq: str,
                          freq_int: int,
                          random_state: int,
-                         out_set_multiplier: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    cv_instance = CV_METHODS[cv_method](**CV_METHODS_PARAMS[cv_method])
+                         out_set_multiplier: int,
+                         cv_methods_override: Optional[Dict] = None,
+                         cv_params_override: Optional[Dict] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    # Use overrides if provided, otherwise use defaults
+    methods = cv_methods_override if cv_methods_override is not None else CV_METHODS
+    params = cv_params_override if cv_params_override is not None else CV_METHODS_PARAMS
+
+    cv_instance = methods[cv_method](**params[cv_method])
 
     uids = in_set['unique_id'].unique()
     splits = list(cv_instance.split(uids))
