@@ -17,7 +17,7 @@ warnings.filterwarnings('ignore')
 
 os.environ['TUNE_DISABLE_STRICT_METRIC_CHECKING'] = '1'
 
-N_FOLDS_VALUES = [2, 3, 5, 7, 10]
+N_FOLDS_VALUES = [3, 5, 7, 10, 20]
 
 # ---- data loading and partitioning
 target = 'monash_m3_monthly'
