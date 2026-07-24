@@ -17,11 +17,11 @@ CV_METHODS = {
 }
 
 CV_METHODS_PARAMS = {
-    'Holdout': {'train_size': HOLDOUT_TR},
-    'RepeatedHoldout': {'train_size': HOLDOUT_TR, 'n_repeats': N_FOLDS},
-    'MonteCarlo': {'train_size': MC_TR, 'test_size': MC_TS, 'n_repeats': N_FOLDS},
-    'Bootstrap': {},
-    'RepeatedBootstrap': {'n_repeats': N_FOLDS},
+    'Holdout': {'train_size': HOLDOUT_TR, 'random_state': SEED},
+    'RepeatedHoldout': {'train_size': HOLDOUT_TR, 'n_repeats': N_FOLDS, 'random_state': SEED},
+    'MonteCarlo': {'train_size': MC_TR, 'test_size': MC_TS, 'n_repeats': N_FOLDS, 'random_state': SEED},
+    'Bootstrap': {'random_state': SEED},
+    'RepeatedBootstrap': {'n_repeats': N_FOLDS, 'random_state': SEED},
     'KFold': {'n_splits': N_FOLDS, 'random_state': SEED},
     'RepeatedKFold': {'n_splits': N_FOLDS, 'n_repeats': KFOLD_N_REPEATS, 'random_state': SEED},
 }

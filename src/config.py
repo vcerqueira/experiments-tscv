@@ -1,4 +1,4 @@
-DRY_RUN = True
+DRY_RUN = False
 
 N_FOLDS = 5
 SEED = 456
@@ -16,7 +16,7 @@ if DRY_RUN:
     N_SAMPLES = 2
     LIMIT_EPOCHS = True
 else:
-    N_SAMPLES = 30
+    N_SAMPLES = 50
     LIMIT_EPOCHS = False
 
 HOLDOUT_FOR_OUTSET = 0
