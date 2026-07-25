@@ -16,7 +16,7 @@ if DRY_RUN:
     N_SAMPLES = 2
     LIMIT_EPOCHS = True
 else:
-    N_SAMPLES = 50
+    N_SAMPLES = 30
     LIMIT_EPOCHS = False
 
 HOLDOUT_FOR_OUTSET = 0

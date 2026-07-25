@@ -38,16 +38,16 @@ from neuralforecast.models import (GRU,
 
 class ModelsConfig:
     AUTO_MODEL_CLASSES = {
-        'AutoTFT': AutoTFT,
+        # 'AutoTFT': AutoTFT,
         'AutoNBEATS': AutoNBEATS,
         'AutoTiDE': AutoTiDE,
         'AutoNLinear': AutoNLinear,
         'AutoKAN': AutoKAN,
         'AutoMLP': AutoMLP,
         'AutoDLinear': AutoDLinear,
-        'AutoNHITS': AutoNHITS,
+        # 'AutoNHITS': AutoNHITS,
         'AutoDeepNPTS': AutoDeepNPTS,
-        'AutoPatchTST': AutoPatchTST,
+        # 'AutoPatchTST': AutoPatchTST,
     }
 
     MODEL_CLASSES = {
