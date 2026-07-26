@@ -49,31 +49,43 @@ if __name__ == '__main__':
                                              limit_epochs=LIMIT_EPOCHS,
                                              n_samples=N_SAMPLES)
 
-    print(f"Running cross validation for method: Time-wise Holdout")
-    tw_cv, tw_cv_inner = time_wise_holdout(in_set=in_set,
-                                           in_set_all=in_set_all,
-                                           out_set=out_set,
-                                           freq=freq,
-                                           freq_int=seas_len,
-                                           horizon=horizon,
-                                           models=models,
-                                           out_set_multiplier=OUT_SET_MULTIPLIER)
+    tw_outer_path = results_dir / f'{target},TimeHoldout,outer.csv'
+    tw_inner_path = results_dir / f'{target},TimeHoldout,inner.csv'
 
-    tw_cv.to_csv(results_dir / f'{target},TimeHoldout,outer.csv', index=False)
-    tw_cv_inner.to_csv(results_dir / f'{target},TimeHoldout,inner.csv', index=False)
+    if not (tw_outer_path.exists() and tw_inner_path.exists()):
+        print(f"Running cross validation for method: Time-wise Holdout")
+        tw_cv, tw_cv_inner = time_wise_holdout(in_set=in_set,
+                                               in_set_all=in_set_all,
+                                               out_set=out_set,
+                                               freq=freq,
+                                               freq_int=seas_len,
+                                               horizon=horizon,
+                                               models=models,
+                                               out_set_multiplier=OUT_SET_MULTIPLIER)
+
+        tw_cv.to_csv(tw_outer_path, index=False)
+        tw_cv_inner.to_csv(tw_inner_path, index=False)
+    else:
+        print(f"Skipping Time-wise Holdout (results already exist)")
 
     for method_name in CV_METHODS:
-        print(f"Running cross validation for method: {method_name}")
-        cv_result, cv_inner_result = run_cross_validation(cv_method=method_name,
-                                                          in_set=in_set,
-                                                          in_set_all=in_set_all,
-                                                          out_set=out_set,
-                                                          freq=freq,
-                                                          freq_int=seas_len,
-                                                          horizon=horizon,
-                                                          nf_models=models,
-                                                          random_state=SEED,
-                                                          out_set_multiplier=OUT_SET_MULTIPLIER)
+        cv_outer_path = results_dir / f'{target},{method_name},outer.csv'
+        cv_inner_path = results_dir / f'{target},{method_name},inner.csv'
 
-        cv_result.to_csv(results_dir / f'{target},{method_name},outer.csv', index=False)
-        cv_inner_result.to_csv(results_dir / f'{target},{method_name},inner.csv', index=False)
+        if not (cv_outer_path.exists() and cv_inner_path.exists()):
+            print(f"Running cross validation for method: {method_name}")
+            cv_result, cv_inner_result = run_cross_validation(cv_method=method_name,
+                                                              in_set=in_set,
+                                                              in_set_all=in_set_all,
+                                                              out_set=out_set,
+                                                              freq=freq,
+                                                              freq_int=seas_len,
+                                                              horizon=horizon,
+                                                              nf_models=models,
+                                                              random_state=SEED,
+                                                              out_set_multiplier=OUT_SET_MULTIPLIER)
+
+            cv_result.to_csv(cv_outer_path, index=False)
+            cv_inner_result.to_csv(cv_inner_path, index=False)
+        else:
+            print(f"Skipping {method_name} (results already exist)")
