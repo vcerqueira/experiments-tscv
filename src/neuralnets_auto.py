@@ -1,6 +1,7 @@
 from typing import Optional, List, Union
 import hashlib
 import json
+from copy import deepcopy
 
 import numpy as np
 import pandas as pd
@@ -35,19 +36,21 @@ from neuralforecast.models import (GRU,
                                    TCN,
                                    DilatedRNN)
 
+from src.config_pool_dft import NEURAL_CONFIG_POOL
+
 
 class ModelsConfig:
     AUTO_MODEL_CLASSES = {
-        # 'AutoTFT': AutoTFT,
+        'AutoTFT': AutoTFT,
         'AutoNBEATS': AutoNBEATS,
         'AutoTiDE': AutoTiDE,
         'AutoNLinear': AutoNLinear,
         'AutoKAN': AutoKAN,
         'AutoMLP': AutoMLP,
         'AutoDLinear': AutoDLinear,
-        # 'AutoNHITS': AutoNHITS,
+        'AutoNHITS': AutoNHITS,
         'AutoDeepNPTS': AutoDeepNPTS,
-        # 'AutoPatchTST': AutoPatchTST,
+        'AutoPatchTST': AutoPatchTST,
     }
 
     MODEL_CLASSES = {
@@ -87,18 +90,27 @@ class ModelsConfig:
                            limit_epochs: bool = False,
                            limit_val_batches: Optional[int] = None):
 
+
+
         models = []
         for mod_name, mod in cls.AUTO_MODEL_CLASSES.items():
-            mod.default_config['accelerator'] = engine
+            config = deepcopy(NEURAL_CONFIG_POOL[mod_name])
+            config['accelerator'] = engine
+
+
+            # mod.default_config['accelerator'] = engine
 
             if limit_epochs:
-                mod.default_config['max_steps'] = 2
+                # mod.default_config['max_steps'] = 2
+                config['max_steps'] = 2
 
             if limit_val_batches is not None:
-                mod.default_config['limit_val_batches'] = limit_val_batches
+                # mod.default_config['limit_val_batches'] = limit_val_batches
+                config['limit_val_batches'] = limit_val_batches
 
             model_instance = mod(
                 h=horizon,
+                config=config,
                 num_samples=n_samples,
                 alias=mod_name,
                 valid_loss=MAE(),
