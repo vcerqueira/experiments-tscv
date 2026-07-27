@@ -164,7 +164,7 @@ lightning_logs/
 
 
 # Custom
-scripts/_dev/
+# scripts/_dev/
 assets/datasets
 assets/results_backup
 assets/results

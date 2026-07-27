@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -14,18 +15,41 @@ from src.utils import (rename_uids,
                        METHOD_NAME_MAPPING,
                        DATA_NAME_MAPPING)
 
-RESULTS_DIR = "assets/results"
+RESULTS_BASE = Path("assets/results_holdout")
+FOLD_BASED_ERROR = False
 
-dataset_names = set(f.split(',')[0] for f in os.listdir(RESULTS_DIR))
-
-MODELS = ["KAN", 'PatchTST', 'NBEATS', 'TFT',
+MODELS = ["KAN",
+          # 'PatchTST',
+          'NBEATS',
+          # 'TFT',
           'TiDE', 'NLinear', "MLP",
-          'DLinear', 'NHITS', 'DeepNPTS',
+          'DLinear',
+          # 'NHITS',
+          'DeepNPTS',
           "SeasonalNaive"]
 
-cv_scores = []
-for ds in dataset_names:
-    print(ds)
+
+def discover_seed_dirs(base: Path) -> list[tuple[str, Path]]:
+    if not base.is_dir():
+        return []
+    return [
+        (child.name, child)
+        for child in sorted(base.iterdir())
+        if child.is_dir() and child.name.startswith("seed_")
+    ]
+
+
+def dataset_names_in_dir(results_dir: Path) -> set[str]:
+    return {f.name.split(',')[0] for f in results_dir.iterdir() if f.suffix == '.csv'}
+
+
+def score_dataset_method(ds: str, method: str, results_dir: Path) -> dict | None:
+    inner_path = results_dir / f"{ds},{method},inner.csv"
+    outer_path = results_dir / f"{ds},{method},outer.csv"
+
+    if not inner_path.is_file() or not outer_path.is_file():
+        return None
+
     if ds in [*LongHorizonDatasetR.FREQUENCY_MAP]:
         df, horizon, _, _, seas_len = LongHorizonDatasetR.load_everything(ds)
     else:
@@ -37,99 +61,110 @@ for ds in dataset_names:
     in_set, _ = ChronosDataset.time_wise_split(df, horizon * OUT_SET_MULTIPLIER)
     mase_sf = mase_scaling_factor(seasonality=seas_len, train_df=in_set)
 
-    FOLD_BASED_ERROR = False
-    cv_methods = [*CV_METHODS] + ['TimeHoldout']
+    cv_inner = pd.read_csv(inner_path)
+    cv_inner.rename(columns={col: col.replace('Auto', '', 1)
+                             for col in cv_inner.columns if col.startswith('Auto')},
+                    inplace=True)
+    cv_outer = pd.read_csv(outer_path)
 
-    for method in cv_methods:
-        inner_path = os.path.join(RESULTS_DIR, f"{ds},{method},inner.csv")
-        outer_path = os.path.join(RESULTS_DIR, f"{ds},{method},outer.csv")
+    radar_outer = ModelRadar(
+        cv_df=cv_outer,
+        metrics=[mae],
+        model_names=MODELS,
+        hardness_reference="SeasonalNaive",
+        ratios_reference="SeasonalNaive",
+    )
 
-        if not os.path.isfile(inner_path) or not os.path.isfile(outer_path):
-            continue
+    err_outer_uids = radar_outer.evaluate(keep_uids=True)
+    err_outer = err_outer_uids.div(mase_sf, axis=0).mean()
+    err_outer = err_outer.drop('SeasonalNaive')
 
-        cv_inner = pd.read_csv(inner_path)
-        cv_inner.rename(columns={col: col.replace('Auto', '', 1)
-                                 for col in cv_inner.columns if col.startswith('Auto')},
-                        inplace=True)
-        cv_outer = pd.read_csv(outer_path)
-
-        # cv_outer.rename(columns={col: col.replace('Auto', '', 1)
-        #                          for col in cv_outer.columns if col.startswith('Auto')},
-        #                 inplace=True)
-
-        radar_outer = ModelRadar(
-            cv_df=cv_outer,
-            metrics=[mae],
-            model_names=MODELS,
-            hardness_reference="SeasonalNaive",
-            ratios_reference="SeasonalNaive",
-        )
-
-        err_outer_uids = radar_outer.evaluate(keep_uids=True)
-        err_outer = err_outer_uids.div(mase_sf, axis=0).mean()
-        err_outer = err_outer.drop('SeasonalNaive')
-
-        if FOLD_BASED_ERROR:
-            cv_inner_g = cv_inner.groupby('fold')
-            folds_res = []
-            for g, fold_cv in cv_inner_g:
-                fold_radar_inner = ModelRadar(
-                    cv_df=fold_cv,
-                    metrics=[mae],
-                    model_names=MODELS,
-                    hardness_reference="SeasonalNaive",
-                    ratios_reference="SeasonalNaive",
-                )
-
-                f_err_inner_uids = fold_radar_inner.evaluate(keep_uids=True)
-                f_err_inner_uids = rename_uids(f_err_inner_uids)
-                f_err_inner = f_err_inner_uids.div(mase_sf, axis=0).mean()
-                f_err_inner = f_err_inner.drop('SeasonalNaive')
-                folds_res.append(f_err_inner)
-
-            err_inner = pd.DataFrame(folds_res).mean()
-        else:
-            radar_inner = ModelRadar(
-                cv_df=cv_inner,
+    if FOLD_BASED_ERROR:
+        cv_inner_g = cv_inner.groupby('fold')
+        folds_res = []
+        for _, fold_cv in cv_inner_g:
+            fold_radar_inner = ModelRadar(
+                cv_df=fold_cv,
                 metrics=[mae],
                 model_names=MODELS,
                 hardness_reference="SeasonalNaive",
                 ratios_reference="SeasonalNaive",
             )
 
-            # err_inner = radar_inner.evaluate(keep_uids=False)
-            # err_inner /= mase_sf.mean()
-            err_inner_uids = radar_inner.evaluate(keep_uids=True)
-            err_inner_uids = rename_uids(err_inner_uids)
-            err_inner = err_inner_uids.div(mase_sf.loc[err_inner_uids.index], axis=0).mean()
-            err_inner = err_inner.drop('SeasonalNaive')
+            f_err_inner_uids = fold_radar_inner.evaluate(keep_uids=True)
+            f_err_inner_uids = rename_uids(f_err_inner_uids)
+            f_err_inner = f_err_inner_uids.div(mase_sf, axis=0).mean()
+            f_err_inner = f_err_inner.drop('SeasonalNaive')
+            folds_res.append(f_err_inner)
 
-        selected_model = err_inner.idxmin()
-        best_model = err_outer.idxmin()
+        err_inner = pd.DataFrame(folds_res).mean()
+    else:
+        radar_inner = ModelRadar(
+            cv_df=cv_inner,
+            metrics=[mae],
+            model_names=MODELS,
+            hardness_reference="SeasonalNaive",
+            ratios_reference="SeasonalNaive",
+        )
 
-        # if pd.isna(selected_model):
-        #     selected_model = 'MLP'
-        #     best_model = 'MLP'
+        err_inner_uids = radar_inner.evaluate(keep_uids=True)
+        err_inner_uids = rename_uids(err_inner_uids)
+        err_inner = err_inner_uids.div(mase_sf.loc[err_inner_uids.index], axis=0).mean()
+        err_inner = err_inner.drop('SeasonalNaive')
 
-        scr = {
-            'Method': method,
-            'Dataset': ds,
-            'selected_error': err_outer[selected_model],
-            'best_error': err_outer[best_model],
-        }
+    selected_model = err_inner.idxmin()
+    best_model = err_outer.idxmin()
 
-        cv_scores.append(scr)
+    return {
+        'Method': method,
+        'Dataset': ds,
+        'selected_error': err_outer[selected_model],
+        'best_error': err_outer[best_model],
+    }
 
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_rows', None)
 
-cv_df = pd.DataFrame(cv_scores).set_index('Method')
+def compute_scores_for_seed(seed_label: str, results_dir: Path) -> pd.DataFrame:
+    cv_methods = [*CV_METHODS] + ['TimeHoldout']
+    rows = []
+    for ds in sorted(dataset_names_in_dir(results_dir)):
+        print(f"{seed_label} / {ds}")
+        for method in cv_methods:
+            row = score_dataset_method(ds, method, results_dir)
+            if row is not None:
+                row['Seed'] = seed_label
+                rows.append(row)
+    return pd.DataFrame(rows)
+
+
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_rows', None)
+
+seed_dirs = discover_seed_dirs(RESULTS_BASE)
+if not seed_dirs:
+    raise SystemExit(
+        f"No seed_* folders found under {RESULTS_BASE.resolve()}. "
+        "Expected e.g. assets/results/seed_123/"
+    )
+
+per_seed_dfs = []
+for seed_label, seed_path in seed_dirs:
+    print(f"=== {seed_label} ===")
+    per_seed_dfs.append(compute_scores_for_seed(seed_label, seed_path))
+
+cv_df_by_seed = pd.concat(per_seed_dfs, ignore_index=True)
+
+cv_df = (
+    cv_df_by_seed
+    .groupby(['Dataset', 'Method'], as_index=False)
+    .mean(numeric_only=True)
+)
 
 print(cv_df.round(3))
 
+cv_df = cv_df.copy()
 cv_df['outer_regret'] = cv_df['selected_error'] - cv_df['best_error']
 
-cv_pivot = cv_df.reset_index().pivot(index='Dataset', columns='Method', values='selected_error')
+cv_pivot = cv_df.pivot(index='Dataset', columns='Method', values='selected_error')
 
 cv_pivot_ext = cv_pivot.copy()
 cv_pivot_ext.loc['Avg. Rank'] = cv_pivot.rank(axis=1).mean()
