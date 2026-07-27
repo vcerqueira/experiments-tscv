@@ -207,5 +207,5 @@ cv_df = (
 )
 
 
-cv_df.groupby('Model').mean(numeric_only=True)['outer_error'].sort_values()
-cv_df.groupby('Model').mean(numeric_only=True)['abs_estimation_error'].sort_values()
+cv_df.groupby('Model').mean(numeric_only=True)['outer_error'].sort_values().round(3)
+cv_df.groupby('Model').mean(numeric_only=True)['abs_estimation_error'].sort_values().round(3)
