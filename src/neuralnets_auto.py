@@ -97,7 +97,6 @@ class ModelsConfig:
             config = deepcopy(NEURAL_CONFIG_POOL[mod_name])
             config['accelerator'] = engine
 
-
             # mod.default_config['accelerator'] = engine
 
             if limit_epochs:
@@ -118,7 +117,7 @@ class ModelsConfig:
                 backend="ray",
                 ray_options=RayOptions(
                     scheduler=ASHAScheduler(
-                        max_t=20,           
+                        max_t=50,
                         grace_period=2,     
                         reduction_factor=4, 
                         brackets=1,
