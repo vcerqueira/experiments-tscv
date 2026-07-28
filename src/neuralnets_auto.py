@@ -118,7 +118,7 @@ class ModelsConfig:
                 ray_options=RayOptions(
                     scheduler=ASHAScheduler(
                         max_t=50,
-                        grace_period=2,     
+                        grace_period=1,
                         reduction_factor=4, 
                         brackets=1,
                     )
