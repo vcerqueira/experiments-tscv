@@ -52,7 +52,7 @@ NEURAL_CONFIG_POOL = {
     'AutoMLP': {
         "input_size_multiplier": [1, 2],
         "h": None,
-        "hidden_size": tune.choice([128, 256]),
+        "hidden_size": tune.choice([64, 128]),
         "num_layers": tune.randint(2, 3),
         "learning_rate": tune.loguniform(1e-4, 1e-1),
         "scaler_type": tune.choice([None, "standard"]),
