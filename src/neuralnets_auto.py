@@ -5,7 +5,7 @@ from copy import deepcopy
 
 import numpy as np
 import pandas as pd
-from ray.tune.schedulers import MedianStoppingRule
+from ray.tune.schedulers import ASHAScheduler
 from neuralforecast import NeuralForecast
 from neuralforecast.common._base_auto import RayOptions
 from neuralforecast.losses.pytorch import MAE
@@ -116,7 +116,14 @@ class ModelsConfig:
                 valid_loss=MAE(),
                 refit_with_val=True,
                 backend="ray",
-                ray_options=RayOptions(scheduler=MedianStoppingRule()),
+                ray_options=RayOptions(
+                    scheduler=ASHAScheduler(
+                        max_t=20,           
+                        grace_period=2,     
+                        reduction_factor=4, 
+                        brackets=1,
+                    )
+                ),
             )
 
             models.append(model_instance)
