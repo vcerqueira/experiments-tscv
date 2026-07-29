@@ -15,16 +15,16 @@ from src.utils import (rename_uids,
                        METHOD_NAME_MAPPING,
                        DATA_NAME_MAPPING)
 
-RESULTS_BASE = Path("assets/results_holdout")
+RESULTS_BASE = Path("assets/results")
 FOLD_BASED_ERROR = False
 
 MODELS = ["KAN",
-          # 'PatchTST',
+          'PatchTST',
           'NBEATS',
-          # 'TFT',
+          'TFT',
           'TiDE', 'NLinear', "MLP",
           'DLinear',
-          # 'NHITS',
+          'NHITS',
           'DeepNPTS',
           "SeasonalNaive"]
 
