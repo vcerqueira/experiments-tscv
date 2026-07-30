@@ -117,7 +117,7 @@ class ModelsConfig:
                 backend="ray",
                 ray_options=RayOptions(
                     scheduler=ASHAScheduler(
-                        max_t=50,
+                        max_t=30,
                         grace_period=1,
                         reduction_factor=4, 
                         brackets=1,
