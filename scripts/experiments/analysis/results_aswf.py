@@ -128,6 +128,9 @@ def compute_scores_for_seed(seed_label: str, results_dir: Path) -> pd.DataFrame:
     rows = []
     for ds in sorted(dataset_names_in_dir(results_dir)):
         print(f"{seed_label} / {ds}")
+        # if ds == 'monash_m1_quarterly':
+        #     continue
+
         for method in cv_methods:
             row = score_dataset_method(ds, method, results_dir)
             if row is not None:
@@ -177,18 +180,20 @@ cv_pivot_ext.index.name = 'Dataset'
 
 print(cv_pivot_ext.round(3))
 print(to_latex_tab(cv_pivot_ext, round_to_n=3, rotate_cols=False))
+#
+# avg_rank = cv_pivot_ext.loc['Avg. Rank'].sort_values()
+# fig, ax = plt.subplots(figsize=(9, 4.5))
+# avg_rank.plot(kind='bar', ax=ax, color='steelblue', edgecolor='black')
+# ax.set_title('Average Rank by CV Method')
+# ax.set_xlabel('Methods')
+# ax.set_ylabel('Avg. Rank')
+# ax.grid(axis='y', linestyle='--', alpha=0.4)
+# ax.set_axisbelow(True)
+# plt.xticks(rotation=30, ha='right')
+# plt.tight_layout()
+#
+# out_png = os.path.join("assets", "avg_rank_barplot.png")
+# fig.savefig(out_png, format='png', dpi=300, bbox_inches='tight')
+# plt.close(fig)
 
-avg_rank = cv_pivot_ext.loc['Avg. Rank'].sort_values()
-fig, ax = plt.subplots(figsize=(9, 4.5))
-avg_rank.plot(kind='bar', ax=ax, color='steelblue', edgecolor='black')
-ax.set_title('Average Rank by CV Method')
-ax.set_xlabel('Methods')
-ax.set_ylabel('Avg. Rank')
-ax.grid(axis='y', linestyle='--', alpha=0.4)
-ax.set_axisbelow(True)
-plt.xticks(rotation=30, ha='right')
-plt.tight_layout()
-
-out_png = os.path.join("assets", "avg_rank_barplot.png")
-fig.savefig(out_png, format='png', dpi=300, bbox_inches='tight')
-plt.close(fig)
+cv_df.set_index('Method')['selected_error']

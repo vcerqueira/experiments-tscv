@@ -146,6 +146,9 @@ def compute_scores_for_seed(seed_label: str, results_dir: Path) -> pd.DataFrame:
     rows = []
     for ds in sorted(dataset_names):
         print(f"{seed_label} / {ds}")
+        # if ds == 'monash_m1_quarterly':
+        #     continue
+
         for method in cv_methods:
             print(f"  {method}")
             row = scores_for_dataset_method(ds, method, results_dir)
