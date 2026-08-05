@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 os.environ['TUNE_DISABLE_STRICT_METRIC_CHECKING'] = '1'
 
 # ---- data loading and partitioning
-target = 'ECL'
+target = 'Weather'
 # df, horizon, _, freq, seas_len = ChronosDataset.load_everything(target)
 df, horizon, _, freq, seas_len = LongHorizonDatasetR.load_everything(target, resample_to='D')
 
