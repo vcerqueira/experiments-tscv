@@ -1,7 +1,7 @@
 DRY_RUN = False
 
 N_FOLDS = 5
-SEED = 789
+SEED = 123
 HOLDOUT_TR = 0.7
 MC_TR = 0.5
 MC_TS = 0.2
@@ -19,4 +19,4 @@ else:
     N_SAMPLES = 20
     LIMIT_EPOCHS = False
 
-HOLDOUT_FOR_OUTSET = 0
+HOLDOUT_FOR_OUTSET = 0.3
