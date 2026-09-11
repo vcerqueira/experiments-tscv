@@ -1,3 +1,17 @@
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "y"}
+
+
 DRY_RUN = False
 
 N_FOLDS = 5
@@ -7,9 +21,9 @@ MC_TR = 0.5
 MC_TS = 0.2
 KFOLD_N_REPEATS = 2
 FOLD_BASED_ERROR = False
-USE_MPS = True
-USE_CUDA = False
-ENGINE = 'mps' if USE_MPS else ('gpu' if USE_CUDA else 'cpu')
+USE_MPS = _env_bool("USE_MPS", True)
+USE_CUDA = _env_bool("USE_CUDA", False)
+ENGINE = "mps" if USE_MPS else ("gpu" if USE_CUDA else "cpu")
 STEP_SIZE = 1
 OUT_SET_MULTIPLIER = 2
 if DRY_RUN:
