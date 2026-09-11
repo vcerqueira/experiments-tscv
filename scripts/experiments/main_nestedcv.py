@@ -1,4 +1,8 @@
 import os
+
+os.environ['TUNE_DISABLE_STRICT_METRIC_CHECKING'] = '1'
+os.environ['RAY_ENABLE_UV_RUN_RUNTIME_ENV'] = '0'
+
 import warnings
 from pathlib import Path
 
@@ -15,8 +19,6 @@ from src.config import (N_SAMPLES,
                         HOLDOUT_FOR_OUTSET)
 
 warnings.filterwarnings('ignore')
-
-os.environ['TUNE_DISABLE_STRICT_METRIC_CHECKING'] = '1'
 
 # ---- data loading and partitioning
 DATASETS = ['monash_m1_monthly',
