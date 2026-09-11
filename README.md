@@ -36,7 +36,7 @@ experiments-tscv/
 ```bash
 git clone https://github.com/vcerqueira/experiments-tscv.git
 cd experiments-tscv
-pip install -r requirements.txt
+pip install .
 ```
 
 ## Running the Benchmark
