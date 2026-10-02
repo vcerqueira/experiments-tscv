@@ -14,8 +14,9 @@ from src.utils import (rename_uids,
                        METHOD_NAME_MAPPING,
                        DATA_NAME_MAPPING)
 
-RESULTS_BASE = Path("assets/results_holdout")
+RESULTS_BASE = Path("assets/results_holdout2")
 FOLD_BASED_ERROR = False
+AVERAGE_SEEDS = False
 
 MODELS = ["KAN",
           'PatchTST',
@@ -138,6 +139,30 @@ def compute_scores_for_seed(seed_label: str, results_dir: Path) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def present_scores(cv_df: pd.DataFrame, heading: str | None = None) -> None:
+    if heading is not None:
+        print(f"\n=== {heading} ===")
+
+    print(cv_df.round(3))
+
+    cv_df = cv_df.copy()
+    cv_df['outer_regret'] = cv_df['selected_error'] - cv_df['best_error']
+
+    cv_pivot = cv_df.pivot(index='Dataset', columns='Method', values='selected_error')
+
+    cv_pivot_ext = cv_pivot.copy()
+    cv_pivot_ext.loc['Avg. Rank'] = cv_pivot.rank(axis=1).mean()
+    cv_pivot_ext.loc['Avg'] = cv_pivot.mean()
+    cv_pivot_ext.loc['Top 2 Count'] = (cv_pivot.rank(axis=1, method='min') < 3).sum().astype(int)
+
+    cv_pivot_ext = cv_pivot_ext.rename(columns=METHOD_NAME_MAPPING, index=DATA_NAME_MAPPING)
+    cv_pivot_ext.columns.name = 'Methods'
+    cv_pivot_ext.index.name = 'Dataset'
+
+    print(cv_pivot_ext.round(3))
+    print(to_latex_tab(cv_pivot_ext, round_to_n=3, rotate_cols=False))
+
+
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
@@ -155,44 +180,14 @@ for seed_label, seed_path in seed_dirs:
 
 cv_df_by_seed = pd.concat(per_seed_dfs, ignore_index=True)
 
-cv_df = (
-    cv_df_by_seed
-    .groupby(['Dataset', 'Method'], as_index=False)
-    .mean(numeric_only=True)
-)
-
-print(cv_df.round(3))
-
-cv_df = cv_df.copy()
-cv_df['outer_regret'] = cv_df['selected_error'] - cv_df['best_error']
-
-cv_pivot = cv_df.pivot(index='Dataset', columns='Method', values='selected_error')
-
-cv_pivot_ext = cv_pivot.copy()
-cv_pivot_ext.loc['Avg. Rank'] = cv_pivot.rank(axis=1).mean()
-cv_pivot_ext.loc['Avg'] = cv_pivot.mean()
-cv_pivot_ext.loc['Top 2 Count'] = (cv_pivot.rank(axis=1, method='min') < 3).sum().astype(int)
-
-cv_pivot_ext = cv_pivot_ext.rename(columns=METHOD_NAME_MAPPING, index=DATA_NAME_MAPPING)
-cv_pivot_ext.columns.name = 'Methods'
-cv_pivot_ext.index.name = 'Dataset'
-
-print(cv_pivot_ext.round(3))
-print(to_latex_tab(cv_pivot_ext, round_to_n=3, rotate_cols=False))
-#
-# avg_rank = cv_pivot_ext.loc['Avg. Rank'].sort_values()
-# fig, ax = plt.subplots(figsize=(9, 4.5))
-# avg_rank.plot(kind='bar', ax=ax, color='steelblue', edgecolor='black')
-# ax.set_title('Average Rank by CV Method')
-# ax.set_xlabel('Methods')
-# ax.set_ylabel('Avg. Rank')
-# ax.grid(axis='y', linestyle='--', alpha=0.4)
-# ax.set_axisbelow(True)
-# plt.xticks(rotation=30, ha='right')
-# plt.tight_layout()
-#
-# out_png = os.path.join("assets", "avg_rank_barplot.png")
-# fig.savefig(out_png, format='png', dpi=300, bbox_inches='tight')
-# plt.close(fig)
-
-cv_df.set_index('Method')['selected_error']
+if AVERAGE_SEEDS:
+    cv_df = (
+        cv_df_by_seed
+        .groupby(['Dataset', 'Method'], as_index=False)
+        .mean(numeric_only=True)
+    )
+    present_scores(cv_df)
+else:
+    for seed_label in cv_df_by_seed['Seed'].unique():
+        cv_df = cv_df_by_seed.loc[cv_df_by_seed['Seed'] == seed_label].drop(columns='Seed')
+        present_scores(cv_df, heading=seed_label)

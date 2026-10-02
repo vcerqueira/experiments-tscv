@@ -17,7 +17,9 @@ from src.config import OUT_SET_MULTIPLIER, FOLD_BASED_ERROR
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
-RESULTS_BASE = Path("assets/results_holdout")
+RESULTS_BASE = Path("assets/results_holdout2")
+# RESULTS_BASE = Path("assets/results2")
+AVERAGE_SEEDS = False
 
 MODELS = ["KAN",
           'PatchTST',
@@ -177,6 +179,16 @@ def summarize(cv_df: pd.DataFrame) -> pd.DataFrame:
     return cv_df_summ.rename(index=METHOD_NAME_MAPPING)
 
 
+def present_scores(cv_df: pd.DataFrame, heading: str | None = None) -> None:
+    if heading is not None:
+        print(f"\n=== {heading} ===")
+
+    cv_df_summ = summarize(cv_df)
+    shown = cv_df_summ.drop("MPEE", axis=1)
+    print(shown)
+    print(to_latex_tab(shown.T, round_to_n=3, rotate_cols=False))
+
+
 seed_dirs = discover_seed_dirs(RESULTS_BASE)
 
 per_seed_dfs = []
@@ -186,13 +198,14 @@ for seed_label, seed_path in seed_dirs:
 
 cv_df_by_seed = pd.concat(per_seed_dfs, ignore_index=True)
 
-# Average metrics across seeds for each (dataset, method)
-cv_df = (
-    cv_df_by_seed
-    .groupby(['Dataset', 'Method'], as_index=False)
-    .mean(numeric_only=True)
-)
-
-cv_df_summ = summarize(cv_df)
-print(cv_df_summ.drop("MPEE", axis=1))
-print(to_latex_tab(cv_df_summ.drop("MPEE", axis=1).T, round_to_n=3, rotate_cols=False))
+if AVERAGE_SEEDS:
+    cv_df = (
+        cv_df_by_seed
+        .groupby(['Dataset', 'Method'], as_index=False)
+        .mean(numeric_only=True)
+    )
+    present_scores(cv_df)
+else:
+    for seed_label in cv_df_by_seed['Seed'].unique():
+        cv_df = cv_df_by_seed.loc[cv_df_by_seed['Seed'] == seed_label].drop(columns='Seed')
+        present_scores(cv_df, heading=seed_label)
