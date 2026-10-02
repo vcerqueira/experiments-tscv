@@ -162,6 +162,7 @@ cython_debug/
 .idea/
 lightning_logs/
 uv.lock
+.DS_Store
 
 
 # Custom
