@@ -18,7 +18,7 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
 RESULTS_BASE = Path("assets/results_holdout")
-# RESULTS_BASE = Path("assets/results2")
+
 AVERAGE_SEEDS = False
 
 MODELS = ["KAN",
@@ -148,8 +148,6 @@ def compute_scores_for_seed(seed_label: str, results_dir: Path) -> pd.DataFrame:
     rows = []
     for ds in sorted(dataset_names):
         print(f"{seed_label} / {ds}")
-        # if ds == 'monash_m1_quarterly':
-        #     continue
 
         for method in cv_methods:
             print(f"  {method}")
@@ -162,31 +160,33 @@ def compute_scores_for_seed(seed_label: str, results_dir: Path) -> pd.DataFrame:
 
 
 def summarize(cv_df: pd.DataFrame) -> pd.DataFrame:
-    cv_df_summ = cv_df.groupby('Method').mean(numeric_only=True).round(3)
-    cv_df_summ["Perc. underestimates"] = (
-        cv_df.groupby('Method')['MPEE'].apply(lambda x: round(100 * (x < 0).mean(), 2))
+    by_method = cv_df.groupby('Method')
+    cv_df_summ = by_method.mean(numeric_only=True)
+    mpee = by_method['MPEE']
+    cv_df_summ["Perc. underestimates"] = mpee.apply(lambda x: 100 * (x < 0).mean())
+    cv_df_summ["Avg. under-estimate"] = mpee.apply(
+        lambda x: x[x < 0].mean() if (x < 0).any() else float('nan')
     )
-    cv_df_summ["Avg. under-estimate"] = (
-        cv_df.groupby('Method')['MPEE'].apply(
-            lambda x: round(x[x < 0].mean(), 3) if (x < 0).any() else float('nan')
-        )
-    )
-    cv_df_summ["Avg. over-estimate"] = (
-        cv_df.groupby('Method')['MPEE'].apply(
-            lambda x: round(x[x > 0].mean(), 3) if (x > 0).any() else float('nan')
-        )
+    cv_df_summ["Avg. over-estimate"] = mpee.apply(
+        lambda x: x[x > 0].mean() if (x > 0).any() else float('nan')
     )
     return cv_df_summ.rename(index=METHOD_NAME_MAPPING)
 
 
-def present_scores(cv_df: pd.DataFrame, heading: str | None = None) -> None:
+def present_scores(cv_df_summ: pd.DataFrame, heading: str | None = None) -> None:
     if heading is not None:
         print(f"\n=== {heading} ===")
 
-    cv_df_summ = summarize(cv_df)
-    shown = cv_df_summ.drop("MPEE", axis=1)
+    shown = cv_df_summ.drop(columns="MPEE").copy()
+    shown = shown.round(3)
+    shown["Perc. underestimates"] = cv_df_summ["Perc. underestimates"].round(2)
     print(shown)
     print(to_latex_tab(shown.T, round_to_n=3, rotate_cols=False))
+
+
+def average_summaries(summaries: list[pd.DataFrame]) -> pd.DataFrame:
+    averaged = pd.concat(summaries).groupby(level=0).mean()
+    return averaged.reindex(summaries[0].index)
 
 
 seed_dirs = discover_seed_dirs(RESULTS_BASE)
@@ -199,13 +199,12 @@ for seed_label, seed_path in seed_dirs:
 cv_df_by_seed = pd.concat(per_seed_dfs, ignore_index=True)
 
 if AVERAGE_SEEDS:
-    cv_df = (
-        cv_df_by_seed
-        .groupby(['Dataset', 'Method'], as_index=False)
-        .mean(numeric_only=True)
-    )
-    present_scores(cv_df)
+    summaries = [
+        summarize(seed_df.drop(columns='Seed'))
+        for _, seed_df in cv_df_by_seed.groupby('Seed', sort=False)
+    ]
+    present_scores(average_summaries(summaries))
 else:
     for seed_label in cv_df_by_seed['Seed'].unique():
         cv_df = cv_df_by_seed.loc[cv_df_by_seed['Seed'] == seed_label].drop(columns='Seed')
-        present_scores(cv_df, heading=seed_label)
+        present_scores(summarize(cv_df), heading=seed_label)

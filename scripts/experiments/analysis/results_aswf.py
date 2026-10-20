@@ -139,28 +139,36 @@ def compute_scores_for_seed(seed_label: str, results_dir: Path) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def present_scores(cv_df: pd.DataFrame, heading: str | None = None) -> None:
-    if heading is not None:
-        print(f"\n=== {heading} ===")
-
-    print(cv_df.round(3))
-
-    cv_df = cv_df.copy()
-    cv_df['outer_regret'] = cv_df['selected_error'] - cv_df['best_error']
-
+def build_scores_table(cv_df: pd.DataFrame) -> pd.DataFrame:
     cv_pivot = cv_df.pivot(index='Dataset', columns='Method', values='selected_error')
 
     cv_pivot_ext = cv_pivot.copy()
     cv_pivot_ext.loc['Avg. Rank'] = cv_pivot.rank(axis=1).mean()
     cv_pivot_ext.loc['Avg'] = cv_pivot.mean()
-    cv_pivot_ext.loc['Top 2 Count'] = (cv_pivot.rank(axis=1, method='min') < 3).sum().astype(int)
+    cv_pivot_ext.loc['Top 2 Count'] = (cv_pivot.rank(axis=1, method='min') < 3).sum()
 
     cv_pivot_ext = cv_pivot_ext.rename(columns=METHOD_NAME_MAPPING, index=DATA_NAME_MAPPING)
     cv_pivot_ext.columns.name = 'Methods'
     cv_pivot_ext.index.name = 'Dataset'
+    return cv_pivot_ext
 
-    print(cv_pivot_ext.round(3))
-    print(to_latex_tab(cv_pivot_ext, round_to_n=3, rotate_cols=False))
+
+def present_scores(cv_df: pd.DataFrame, heading: str | None = None) -> None:
+    if heading is not None:
+        print(f"\n=== {heading} ===")
+
+    print(cv_df.round(3))
+    table = build_scores_table(cv_df)
+    print(table.round(3))
+    print(to_latex_tab(table, round_to_n=3, rotate_cols=False))
+
+
+def average_score_tables(tables: list[pd.DataFrame]) -> pd.DataFrame:
+    averaged = pd.concat(tables).groupby(level=0).mean()
+    averaged = averaged.reindex(index=tables[0].index, columns=tables[0].columns)
+    averaged.columns.name = tables[0].columns.name
+    averaged.index.name = tables[0].index.name
+    return averaged
 
 
 pd.set_option('display.max_columns', None)
@@ -181,12 +189,13 @@ for seed_label, seed_path in seed_dirs:
 cv_df_by_seed = pd.concat(per_seed_dfs, ignore_index=True)
 
 if AVERAGE_SEEDS:
-    cv_df = (
-        cv_df_by_seed
-        .groupby(['Dataset', 'Method'], as_index=False)
-        .mean(numeric_only=True)
-    )
-    present_scores(cv_df)
+    tables = [
+        build_scores_table(seed_df.drop(columns='Seed'))
+        for _, seed_df in cv_df_by_seed.groupby('Seed', sort=False)
+    ]
+    averaged = average_score_tables(tables)
+    print(averaged.round(3))
+    print(to_latex_tab(averaged, round_to_n=3, rotate_cols=False))
 else:
     for seed_label in cv_df_by_seed['Seed'].unique():
         cv_df = cv_df_by_seed.loc[cv_df_by_seed['Seed'] == seed_label].drop(columns='Seed')
