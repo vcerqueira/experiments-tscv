@@ -14,7 +14,7 @@ from src.utils import (rename_uids,
                        METHOD_NAME_MAPPING,
                        DATA_NAME_MAPPING)
 
-RESULTS_BASE = Path("assets/results_holdout2")
+RESULTS_BASE = Path("assets/results_holdout")
 FOLD_BASED_ERROR = False
 AVERAGE_SEEDS = False
 

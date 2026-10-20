@@ -17,7 +17,7 @@ from src.config import OUT_SET_MULTIPLIER, FOLD_BASED_ERROR
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
 
-RESULTS_BASE = Path("assets/results_holdout2")
+RESULTS_BASE = Path("assets/results_holdout")
 # RESULTS_BASE = Path("assets/results2")
 AVERAGE_SEEDS = False
 
