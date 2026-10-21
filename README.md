@@ -53,12 +53,8 @@ python scripts/experiments/main_nestedcv.py
 
 Use scripts in `scripts/experiments/analysis`:
 
-- `estimation_scores_inseed.py`: performance estimation and model selection metrics (accuracy and regret)
-- `results_aswf_inseed.py`: downstream forecasting results based on MASE
-
-The image below shows the average rank of forecasting performance of each CV approach (lower is better).
-
-![Average rank by CV method](assets/avg_rank_barplot.png)
+- `estimation_scores.py`: performance estimation and model selection metrics (accuracy and regret)
+- `results_aswf.py`: downstream forecasting results based on MASE
 
 
 ## Contact
