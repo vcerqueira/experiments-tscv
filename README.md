@@ -1,4 +1,4 @@
-# Time Series Cross-Validation Benchmark for Global Forecasting Models
+# Series-wise Time Series Cross-Validation for Global Forecasting Models
 
 This repository benchmarks cross-validation (CV) strategies for **time series forecasting with global deep learning models**.
 
