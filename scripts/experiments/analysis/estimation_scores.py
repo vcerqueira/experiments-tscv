@@ -126,8 +126,11 @@ def scores_for_dataset_method(
     selected_model = err_inner.idxmin()
     best_model = err_outer.idxmin()
 
-    mae_all = (err_inner - err_outer).abs().mean()
-    me_all = (err_inner - err_outer).mean()
+    common = err_inner.index.intersection(err_outer.index)
+    gap = err_inner.loc[common] - err_outer.loc[common]
+    mae_all = gap.abs().mean()
+    me_all = gap.mean()
+    overoptimism = float((gap < 0).mean())
     accuracy = int(selected_model == best_model)
     regret = err_outer[selected_model] - err_outer[best_model]
 
@@ -136,6 +139,7 @@ def scores_for_dataset_method(
         'Method': method,
         'MAPEE': mae_all,
         'MPEE': me_all,
+        'Overoptimism': overoptimism,
         'Accuracy': accuracy,
         'Regret': regret,
     }
@@ -163,7 +167,6 @@ def summarize(cv_df: pd.DataFrame) -> pd.DataFrame:
     by_method = cv_df.groupby('Method')
     cv_df_summ = by_method.mean(numeric_only=True)
     mpee = by_method['MPEE']
-    cv_df_summ["Perc. underestimates"] = mpee.apply(lambda x: 100 * (x < 0).mean())
     cv_df_summ["Avg. under-estimate"] = mpee.apply(
         lambda x: x[x < 0].mean() if (x < 0).any() else float('nan')
     )
@@ -179,7 +182,6 @@ def present_scores(cv_df_summ: pd.DataFrame, heading: str | None = None) -> None
 
     shown = cv_df_summ.drop(columns="MPEE").copy()
     shown = shown.round(3)
-    shown["Perc. underestimates"] = cv_df_summ["Perc. underestimates"].round(2)
     print(shown)
     print(to_latex_tab(shown.T, round_to_n=3, rotate_cols=False))
 
